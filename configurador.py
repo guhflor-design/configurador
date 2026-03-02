@@ -149,14 +149,14 @@ class PainelAutomacao(ctk.CTk):
             driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
             driver.find_element(By.ID, "LoginId").click()
             
-            # --- NOVO: Fechar pop-up de 'Sair' ---
-            self.after(0, lambda: self.escrever_log("⏳ Aguardando pop-up..."))
-            time.sleep(2)
-            try:
-                wait.until(EC.element_to_be_clickable((By.ID, "Btn_Close"))).click()
-                self.after(0, lambda: self.escrever_log("✅ Pop-up inicial fechado."))
-            except:
-                self.after(0, lambda: self.escrever_log("⚠️ Pop-up não apareceu."))
+            # --- ATUALIZADO: Espera e Fechar pop-up instantaneamente via Coordenadas (pyautogui) ---
+            self.after(0, lambda: self.escrever_log("⏳ Aguardando carregamento do pop-up..."))
+            time.sleep(2) # <--- Espera de 2 segundos conforme solicitado
+            
+            self.after(0, lambda: self.escrever_log("🖱️ Clicando instantaneamente para fechar pop-up..."))
+            # duration=0 faz o mouse ir instantaneamente para o local
+            pyautogui.click(655, 378)
+            self.after(0, lambda: self.escrever_log("✅ Pop-up inicial fechado (clique instantâneo)."))
 
             # Clicar em "Gerenciamento & Diagnóstico"
             time.sleep(1)
