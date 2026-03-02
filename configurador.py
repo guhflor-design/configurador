@@ -206,7 +206,7 @@ class PainelAutomacao(ctk.CTk):
             campo_serial = wait.until(EC.presence_of_element_located((By.ID, "modal_mac_address")))
             campo_serial.clear()
             campo_serial.send_keys(serial)
-            self.after(0, lambda: self.escrever_log(f"✅ Serial {serial} inserido no sistema!"))
+            self.after(0, lambda: self.escrever_log(f"✅ Serial {serial} inserido no sistemaa!"))
 
             # Salva contador
             self.total_finalizados += 1
