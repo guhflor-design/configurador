@@ -23,11 +23,11 @@ PASTA_PROG = DESKTOP_PATH / "programa"
 ARQUIVO_CONTADOR = PASTA_PROG / "contador_prod.txt"
 
 # CAMINHOS DOS BINS (BUSCANDO DA ÁREA DE TRABALHO REAL)
-# --- ATUALIZADO: Caminho exato do F6600P ---
+# --- Caminho exato do F6600P ---
 BASE_PATH_6600 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\6600")
 ARQUIVO_BIN_6600 = str(BASE_PATH_6600 / "Versão 02.06.25.bin")
 
-# --- ATUALIZADO: Caminho exato do H3601P ---
+# --- Caminho exato do H3601P ---
 BASE_PATH_3601 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360")
 ARQUIVO_BIN_3601 = str(BASE_PATH_3601 / "ZTE_H3601P Router Primario Agent.bin")
 
@@ -126,12 +126,14 @@ class PainelAutomacao(ctk.CTk):
             time.sleep(1)
 
     # ================================================================
-    # JANELAS DE ACESSO
+    # FLUXOS DE ACESSO
     # ================================================================
     
     def fluxo_zte_6600(self):
-        # ... (Mantém o código anterior do 6600) ...
-        pass
+        # ... (Implementar os caminhos corretos do 6600 aqui depois) ...
+        self.after(0, lambda: self.escrever_log("🤖 Fluxo 6600P não implementado."))
+        self.esperando_troca_de_cabo = False
+        if self.lock_execucao.locked(): self.lock_execucao.release()
 
     def fluxo_zte_3601(self):
         driver = None
@@ -140,7 +142,7 @@ class PainelAutomacao(ctk.CTk):
             self.after(0, lambda: self.escrever_log("🔓 Abrindo JANELA DE ACESSO (H3601P)..."))
             opts = Options()
             driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
-            wait = WebDriverWait(driver, 15)
+            wait = WebDriverWait(driver, 20) 
 
             driver.get("http://192.168.1.1")
             
@@ -149,51 +151,73 @@ class PainelAutomacao(ctk.CTk):
             driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
             driver.find_element(By.ID, "LoginId").click()
             
-            # --- ATUALIZADO: Espera e Fechar pop-up instantaneamente via Coordenadas (pyautogui) ---
+            # --- POPUP: Espera 2s e Clica Instantaneamente ---
             self.after(0, lambda: self.escrever_log("⏳ Aguardando carregamento do pop-up..."))
-            time.sleep(2) # <--- Espera de 2 segundos conforme solicitado
+            time.sleep(2) 
             
             self.after(0, lambda: self.escrever_log("🖱️ Clicando instantaneamente para fechar pop-up..."))
             # duration=0 faz o mouse ir instantaneamente para o local
             pyautogui.click(655, 378)
             self.after(0, lambda: self.escrever_log("✅ Pop-up inicial fechado (clique instantâneo)."))
 
-            # Clicar em "Gerenciamento & Diagnóstico"
-            time.sleep(1)
+            # --- Sai da config rápida ---
+            self.after(0, lambda: self.escrever_log("⏳ Clicando em sair da configuração rápida..."))
+            wait.until(EC.element_to_be_clickable((By.ID, "Btn_Close"))).click()
+            self.after(0, lambda: self.escrever_log("✅ Saiu da configuração rápida."))
+            
+            # --- Navegação Robusta ---
+            
+            # 1. Clicar em "Gerenciamento & Diagnóstico"
+            self.after(0, lambda: self.escrever_log("⏳ Aguardando menu Gerenciamento..."))
             wait.until(EC.element_to_be_clickable((By.ID, "mgrAndDiag"))).click()
             self.after(0, lambda: self.escrever_log("✅ Menu Gerenciamento aberto."))
             
-            # Captura do Serial
-            time.sleep(1)
+            # 2. Captura do Serial
+            self.after(0, lambda: self.escrever_log("⏳ Capturando Serial Number..."))
             campo_sn = wait.until(EC.presence_of_element_located((By.ID, "SerialNumber")))
             sn_extraido = campo_sn.get_attribute("title").strip().upper()
             self.after(0, lambda s=sn_extraido: self.escrever_log(f"🔢 SN Capturado: {s}"))
             
-            # Clicar em "Gerenciamento de sistema"
-            time.sleep(1)
+            # 3. Clicar em "Gerenciamento de sistema"
+            self.after(0, lambda: self.escrever_log("⏳ Expandindo submenu Sistema..."))
             wait.until(EC.element_to_be_clickable((By.ID, "devMgr"))).click()
-            self.after(0, lambda: self.escrever_log("✅ Submenu Sistema aberto."))
+            
+            # --- NOVO: Fazer o scroll para a direita para ver o menu ---
+            self.after(0, lambda: self.escrever_log("⏳ Fazendo scroll para a direita..."))
+            
+            # Pega a localização do botão na tela para garantir o clique
+            btn_scroll = wait.until(EC.presence_of_element_located((By.ID, "scrollRightBtn")))
+            location = btn_scroll.location_once_scrolled_into_view
+            
+            # Clica usando PyAutoGUI baseado na posição do Selenium
+            pyautogui.click(location['x'] + 10, location['y'] + 130) # Ajuste de offset para o clique
+            
+            time.sleep(1) # Tempo para a rolagem acontecer
+
+            # 4. Clicar no sub-item "Configuração de gerência padrão"
+            self.after(0, lambda: self.escrever_log("⏳ Clicando em Configuração de gerência padrão..."))
+            # ID do sub-item que agora deve estar visível
+            wait.until(EC.element_to_be_clickable((By.ID, "ConfigUpload"))).click()
+            self.after(0, lambda: self.escrever_log("✅ Submenu aberto."))
 
             # --- FLUXO DE UPLOAD BIN DO H3601P ---
             self.after(0, lambda: self.escrever_log("⏳ Iniciando Upload do BIN..."))
             
-            # Clicar no campo de arquivo
-            wait.until(EC.element_to_be_clickable((By.ID, "ConfigUpload"))).click()
-            
             # Ação do gerenciador de arquivos do Windows (pyautogui)
-            time.sleep(2)
+            time.sleep(2) 
             pyautogui.write(ARQUIVO_BIN_3601)
             pyautogui.press('enter')
             self.after(0, lambda: self.escrever_log("✅ Arquivo selecionado."))
             
-            # Clicar no botão 'Restaurar Configuração'
-            time.sleep(1)
+            # 5. Clicar no botão 'Restaurar Configuração'
+            self.after(0, lambda: self.escrever_log("⏳ Clicando em Restaurar Configuração..."))
             wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
-            self.after(0, lambda: self.escrever_log("✅ Configuração restaurada."))
+            self.after(0, lambda: self.escrever_log("✅ Botão Restaurar clicado."))
             
-            # Clicar no botão 'OK' do pop-up de confirmação
-            time.sleep(1)
+            # 6. Clicar no botão 'OK' do pop-up de confirmação
+            self.after(0, lambda: self.escrever_log("⏳ Confirmando pop-up..."))
             wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
+            self.after(0, lambda: self.escrever_log("✅ Confirmação enviada."))
             
             # --- PAUSA DE 10 SEGUNDOS APÓS CONFIRMAÇÃO ---
             self.after(0, lambda: self.escrever_log("⏳ Aguardando 10 segundos para iniciar Cadastro..."))
