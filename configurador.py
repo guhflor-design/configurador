@@ -149,10 +149,14 @@ class PainelAutomacao(ctk.CTk):
             driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
             driver.find_element(By.ID, "LoginId").click()
             
-            # Clicar no botão 'Sair' do pop-up inicial
+            # --- NOVO: Fechar pop-up de 'Sair' ---
+            self.after(0, lambda: self.escrever_log("⏳ Aguardando pop-up..."))
             time.sleep(2)
-            wait.until(EC.element_to_be_clickable((By.ID, "Btn_Close"))).click()
-            self.after(0, lambda: self.escrever_log("✅ Pop-up inicial fechado."))
+            try:
+                wait.until(EC.element_to_be_clickable((By.ID, "Btn_Close"))).click()
+                self.after(0, lambda: self.escrever_log("✅ Pop-up inicial fechado."))
+            except:
+                self.after(0, lambda: self.escrever_log("⚠️ Pop-up não apareceu."))
 
             # Clicar em "Gerenciamento & Diagnóstico"
             time.sleep(1)
@@ -191,7 +195,7 @@ class PainelAutomacao(ctk.CTk):
             time.sleep(1)
             wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
             
-            # --- AJUSTE SOLICITADO: 10 segundos de espera após o OK ---
+            # --- PAUSA DE 10 SEGUNDOS APÓS CONFIRMAÇÃO ---
             self.after(0, lambda: self.escrever_log("⏳ Aguardando 10 segundos para iniciar Cadastro..."))
             time.sleep(10) 
             
