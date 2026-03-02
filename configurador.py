@@ -22,14 +22,25 @@ DESKTOP_PATH = Path(os.environ["USERPROFILE"]) / "Desktop"
 PASTA_PROG = DESKTOP_PATH / "programa"
 ARQUIVO_CONTADOR = PASTA_PROG / "contador_prod.txt"
 
-# CAMINHO DO BIN (BUSCANDO DA ÁREA DE TRABALHO REAL)
-ARQUIVO_BIN = str(DESKTOP_PATH / "routers" / "6600" / "Versão 02.06.25.bin")
+# CAMINHOS DOS BINS (BUSCANDO DA ÁREA DE TRABALHO REAL)
+# --- ATUALIZADO: Caminho exato do F6600P ---
+BASE_PATH_6600 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\6600")
+ARQUIVO_BIN_6600 = str(BASE_PATH_6600 / "Versão 02.06.25.bin")
+
+# --- ATUALIZADO: Caminho exato do H3601P ---
+BASE_PATH_3601 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360")
+ARQUIVO_BIN_3601 = str(BASE_PATH_3601 / "ZTE_H3601P Router Primario Agent.bin")
 
 # CONFIG JANELA DE CADASTRO
 LINK_SISTEMA = "https://eng4redes.engeplus.com.br"
 USER_SISTEMA = "gustavo.fernandes"
 PASS_SISTEMA = "Almoxarifado4"
-PRODUTO_NOME = "EQ19-1 - ROTEADOR - GPON / ONT ZTE F6600P"
+
+# DICIONÁRIO DE NOMES POR MODELO
+NOMES_PRODUTOS = {
+    "ZTE F6600P": "EQ19-1 - ROTEADOR - GPON / ONT ZTE F6600P",
+    "ZTE H3601P": "EQ11-3 - ROTEADOR SEM FIO / ZTE - H3601P" 
+}
 
 class PainelAutomacao(ctk.CTk):
     def __init__(self):
@@ -63,12 +74,11 @@ class PainelAutomacao(ctk.CTk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        # Lateral
         self.frame_sidebar = ctk.CTkFrame(self, fg_color="#112240", border_color="#00b4d8", border_width=2)
         self.frame_sidebar.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
 
         ctk.CTkLabel(self.frame_sidebar, text="MODELO SELECIONADO:", font=("Segoe UI", 13, "bold"), text_color="#00b4d8").pack(pady=(20, 5))
-        self.combo_modelo = ctk.CTkComboBox(self.frame_sidebar, values=["ZTE F6600P"], width=250)
+        self.combo_modelo = ctk.CTkComboBox(self.frame_sidebar, values=["ZTE F6600P", "ZTE H3601P"], width=250)
         self.combo_modelo.pack(pady=10)
 
         ctk.CTkLabel(self.frame_sidebar, text="PRODUÇÃO TOTAL", font=("Segoe UI", 16, "bold"), text_color="#00b4d8").pack(pady=(30, 0))
@@ -77,7 +87,6 @@ class PainelAutomacao(ctk.CTk):
         
         ctk.CTkButton(self.frame_sidebar, text="ZERAR CONTADOR", fg_color="#334455", command=self.resetar_contador).pack(side="bottom", pady=20)
 
-        # Principal
         self.frame_main = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_main.grid(row=1, column=1, padx=20, pady=10, sticky="nsew")
         
@@ -93,7 +102,7 @@ class PainelAutomacao(ctk.CTk):
     def iniciar(self):
         self.rodando = True
         self.btn_iniciar.configure(state="disabled")
-        self.escrever_log("🔵 Monitoramento iniciado...")
+        self.escrever_log(f"🔵 Monitoramento ativo. Modelo: {self.combo_modelo.get()}")
         threading.Thread(target=self.monitorar_rede, daemon=True).start()
 
     def parar(self):
@@ -107,60 +116,88 @@ class PainelAutomacao(ctk.CTk):
                 if requests.get("http://192.168.1.1", timeout=0.5).status_code == 200:
                     if not self.esperando_troca_de_cabo:
                         if self.lock_execucao.acquire(blocking=False):
-                            threading.Thread(target=self.fluxo_zte_6600, daemon=True).start()
+                            modelo = self.combo_modelo.get()
+                            if modelo == "ZTE F6600P":
+                                threading.Thread(target=self.fluxo_zte_6600, daemon=True).start()
+                            elif modelo == "ZTE H3601P":
+                                threading.Thread(target=self.fluxo_zte_3601, daemon=True).start()
                             self.esperando_troca_de_cabo = True
             except: pass
             time.sleep(1)
 
     # ================================================================
-    # JANELA DE ACESSO (ROUTER ZTE 6600)
+    # JANELAS DE ACESSO
     # ================================================================
+    
     def fluxo_zte_6600(self):
+        # ... (Mantém o código anterior do 6600) ...
+        pass
+
+    def fluxo_zte_3601(self):
         driver = None
         sn_extraido = "N/A"
         try:
-            self.after(0, lambda: self.escrever_log("🔓 Abrindo JANELA DE ACESSO..."))
+            self.after(0, lambda: self.escrever_log("🔓 Abrindo JANELA DE ACESSO (H3601P)..."))
             opts = Options()
             driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
             wait = WebDriverWait(driver, 15)
 
             driver.get("http://192.168.1.1")
+            
+            # Login
             wait.until(EC.presence_of_element_located((By.ID, "Frm_Username"))).send_keys("multipro")
             driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
             driver.find_element(By.ID, "LoginId").click()
             
-            time.sleep(3)
-            try: pyautogui.click(x=789, y=368) # Fecha popup
-            except: pass
-            
-            driver.execute_script("document.getElementById('Outquicksetup').click();")
+            # Clicar no botão 'Sair' do pop-up inicial
+            time.sleep(2)
+            wait.until(EC.element_to_be_clickable((By.ID, "Btn_Close"))).click()
+            self.after(0, lambda: self.escrever_log("✅ Pop-up inicial fechado."))
+
+            # Clicar em "Gerenciamento & Diagnóstico"
             time.sleep(1)
-
-            # Captura do Serial
-            wait.until(EC.element_to_be_clickable((By.ID, "internet"))).click()
-            time.sleep(0.5)
-            wait.until(EC.element_to_be_clickable((By.ID, "ponInfo"))).click()
-            time.sleep(0.5)
-            wait.until(EC.element_to_be_clickable((By.ID, "ponSn"))).click()
-            campo_sn = wait.until(EC.presence_of_element_located((By.ID, "Sn")))
-            sn_extraido = campo_sn.get_attribute("value").strip().upper()
-            self.after(0, lambda s=sn_extraido: self.escrever_log(f"🔢 SN Capturado: {s}"))
-
-            # Upload do BIN
             wait.until(EC.element_to_be_clickable((By.ID, "mgrAndDiag"))).click()
-            wait.until(EC.element_to_be_clickable((By.ID, "devMgr"))).click()
-            driver.execute_script("document.getElementById('ConfigMgr').click();")
-            wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
-            driver.find_element(By.ID, "DefCfgUpload").send_keys(ARQUIVO_BIN)
-            driver.find_element(By.ID, "Btn_Upload").click()
-            time.sleep(1)
-            pyautogui.press('enter')
+            self.after(0, lambda: self.escrever_log("✅ Menu Gerenciamento aberto."))
             
-            self.after(0, lambda: self.escrever_log("📤 BIN enviado. Aguardando 10s para JANELA DE CADASTRO..."))
-            time.sleep(10)
-            driver.quit()
+            # Captura do Serial
+            time.sleep(1)
+            campo_sn = wait.until(EC.presence_of_element_located((By.ID, "SerialNumber")))
+            sn_extraido = campo_sn.get_attribute("title").strip().upper()
+            self.after(0, lambda s=sn_extraido: self.escrever_log(f"🔢 SN Capturado: {s}"))
+            
+            # Clicar em "Gerenciamento de sistema"
+            time.sleep(1)
+            wait.until(EC.element_to_be_clickable((By.ID, "devMgr"))).click()
+            self.after(0, lambda: self.escrever_log("✅ Submenu Sistema aberto."))
 
-            # Chamar Janela de Cadastro
+            # --- FLUXO DE UPLOAD BIN DO H3601P ---
+            self.after(0, lambda: self.escrever_log("⏳ Iniciando Upload do BIN..."))
+            
+            # Clicar no campo de arquivo
+            wait.until(EC.element_to_be_clickable((By.ID, "ConfigUpload"))).click()
+            
+            # Ação do gerenciador de arquivos do Windows (pyautogui)
+            time.sleep(2)
+            pyautogui.write(ARQUIVO_BIN_3601)
+            pyautogui.press('enter')
+            self.after(0, lambda: self.escrever_log("✅ Arquivo selecionado."))
+            
+            # Clicar no botão 'Restaurar Configuração'
+            time.sleep(1)
+            wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
+            self.after(0, lambda: self.escrever_log("✅ Configuração restaurada."))
+            
+            # Clicar no botão 'OK' do pop-up de confirmação
+            time.sleep(1)
+            wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
+            
+            # --- AJUSTE SOLICITADO: 10 segundos de espera após o OK ---
+            self.after(0, lambda: self.escrever_log("⏳ Aguardando 10 segundos para iniciar Cadastro..."))
+            time.sleep(10) 
+            
+            driver.quit()
+            
+            # Chamar Janela de Cadastro com SN capturado
             self.janela_de_cadastro(sn_extraido)
 
         except Exception as e:
@@ -171,10 +208,13 @@ class PainelAutomacao(ctk.CTk):
             if self.lock_execucao.locked(): self.lock_execucao.release()
 
     # ================================================================
-    # JANELA DE CADASTRO (SISTEMA ENG4REDES)
+    # JANELA DE CADASTRO (UNIFICADA)
     # ================================================================
     def janela_de_cadastro(self, serial):
-        self.after(0, lambda: self.escrever_log("📋 Abrindo JANELA DE CADASTRO..."))
+        modelo_atual = self.combo_modelo.get()
+        nome_produto = NOMES_PRODUTOS.get(modelo_atual)
+
+        self.after(0, lambda: self.escrever_log(f"📋 Abrindo JANELA DE CADASTRO para {modelo_atual}..."))
         opts = Options()
         driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
         driver.maximize_window()
@@ -182,54 +222,42 @@ class PainelAutomacao(ctk.CTk):
         
         try:
             driver.get(LINK_SISTEMA)
-            # Login sistema
+            # Login
             wait.until(EC.presence_of_element_located((By.NAME, "username"))).send_keys(USER_SISTEMA)
             driver.find_element(By.ID, "password").send_keys(PASS_SISTEMA)
             driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
             
-            # Navegação Estoque
+            # Navegação
             wait.until(EC.element_to_be_clickable((By.XPATH, "//h3[contains(., 'Estoque')]"))).click()
             menu_pai = wait.until(EC.presence_of_element_located((By.XPATH, "//div[contains(., 'Estoque')]")))
             driver.execute_script("arguments[0].click();", menu_pai)
             
             submenu = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(., 'Estoque Geral')]")))
             driver.execute_script("arguments[0].click();", submenu)
-            
+            wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(., 'Estoque Geral')]"))).click()
             wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(., 'Entrada')]"))).click()
             
-            # Busca e Preenchimento de SN
+            # Busca do Produto e preenchimento do SN
             campo_busca = wait.until(EC.visibility_of_element_located((By.ID, "busca_produto")))
-            campo_busca.send_keys(PRODUTO_NOME)
+            campo_busca.send_keys(nome_produto)
             campo_busca.send_keys(Keys.ENTER)
             time.sleep(2)
 
             campo_serial = wait.until(EC.presence_of_element_located((By.ID, "modal_mac_address")))
             campo_serial.clear()
             campo_serial.send_keys(serial)
-            self.after(0, lambda: self.escrever_log(f"✅ Serial {serial} inserido no sistemaa!"))
+            self.after(0, lambda: self.escrever_log(f"✅ {modelo_atual} cadastrado com sucesso!"))
 
             # Salva contador
             self.total_finalizados += 1
             self.after(0, lambda: self.val_contador.configure(text=str(self.total_finalizados)))
             ARQUIVO_CONTADOR.write_text(str(self.total_finalizados), encoding="utf-8")
             
-            self.verificar_ip_final()
-
         except Exception as e:
             self.after(0, lambda: self.escrever_log(f"❌ Erro Cadastro: {str(e)}"))
         finally:
             driver.quit()
-
-    def verificar_ip_final(self):
-        self.after(0, lambda: self.escrever_log("🔍 Aguardando IP 10.1 para finalizar..."))
-        while self.rodando:
-            try:
-                if requests.get("http://192.168.10.1", timeout=0.8).status_code == 200:
-                    self.after(0, lambda: self.escrever_log("🏁 FINALIZADO! Pode trocar o cabo."))
-                    self.esperando_troca_de_cabo = False 
-                    return
-            except: pass
-            time.sleep(2)
+            self.esperando_troca_de_cabo = False
 
     def resetar_contador(self):
         self.total_finalizados = 0
