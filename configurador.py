@@ -12,6 +12,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import WebDriverException
 from webdriver_manager.chrome import ChromeDriverManager
 
 # ==========================================
@@ -136,105 +137,129 @@ class PainelAutomacao(ctk.CTk):
         if self.lock_execucao.locked(): self.lock_execucao.release()
 
     def fluxo_zte_3601(self):
-        driver = None
+        """Abre a interface do H3601P, faz upload e retorna o serial.
+
+        O site usa frames internos e durante a navegação eles podem ser
+        substituídos, o que faz o Selenium disparar um
+        ``WebDriverException('target frame detached')``.  Em vez de abortar
+        o fluxo, tentamos uma vez mais antes de falhar de vez.
+        """
+
+        attempts = 2  # número de tentativas em caso de frame desconectado
         sn_extraido = "N/A"
-        try:
-            self.after(0, lambda: self.escrever_log("🔓 Abrindo JANELA DE ACESSO (H3601P)..."))
-            opts = Options()
-            driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
-            wait = WebDriverWait(driver, 20) 
 
-            driver.get("http://192.168.1.1")
-            
-            # Login
-            wait.until(EC.presence_of_element_located((By.ID, "Frm_Username"))).send_keys("multipro")
-            driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
-            driver.find_element(By.ID, "LoginId").click()
-            
-            # --- POPUP: Espera 2s e Clica Instantaneamente ---
-            self.after(0, lambda: self.escrever_log("⏳ Aguardando carregamento do pop-up..."))
-            time.sleep(2) 
-            
-            self.after(0, lambda: self.escrever_log("🖱️ Clicando instantaneamente para fechar pop-up..."))
-            # duration=0 faz o mouse ir instantaneamente para o local
-            pyautogui.click(655, 378)
-            self.after(0, lambda: self.escrever_log("✅ Pop-up inicial fechado (clique instantâneo)."))
+        while attempts:
+            driver = None
+            try:
+                self.after(0, lambda: self.escrever_log("🔓 Abrindo JANELA DE ACESSO (H3601P)..."))
+                opts = Options()
+                driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
+                wait = WebDriverWait(driver, 20)
 
-            # --- Sai da config rápida ---
-            self.after(0, lambda: self.escrever_log("⏳ Clicando em sair da configuração rápida..."))
-            wait.until(EC.element_to_be_clickable((By.ID, "Btn_Close"))).click()
-            self.after(0, lambda: self.escrever_log("✅ Saiu da configuração rápida."))
-            
-            # --- Navegação Robusta ---
-            
-            # 1. Clicar em "Gerenciamento & Diagnóstico"
-            self.after(0, lambda: self.escrever_log("⏳ Aguardando menu Gerenciamento..."))
-            wait.until(EC.element_to_be_clickable((By.ID, "mgrAndDiag"))).click()
-            self.after(0, lambda: self.escrever_log("✅ Menu Gerenciamento aberto."))
-            
-            # 2. Captura do Serial
-            self.after(0, lambda: self.escrever_log("⏳ Capturando Serial Number..."))
-            campo_sn = wait.until(EC.presence_of_element_located((By.ID, "SerialNumber")))
-            sn_extraido = campo_sn.get_attribute("title").strip().upper()
-            self.after(0, lambda s=sn_extraido: self.escrever_log(f"🔢 SN Capturado: {s}"))
-            
-            # 3. Clicar em "Gerenciamento de sistema"
-            self.after(0, lambda: self.escrever_log("⏳ Expandindo submenu Sistema..."))
-            wait.until(EC.element_to_be_clickable((By.ID, "devMgr"))).click()
-            
-            # --- NOVO: Fazer o scroll para a direita para ver o menu ---
-            self.after(0, lambda: self.escrever_log("⏳ Fazendo scroll para a direita..."))
-            
-            # Pega a localização do botão na tela para garantir o clique
-            # precisamos clicar e segurar para rolar o painel
-            btn = wait.until(EC.element_to_be_clickable((By.ID, "scrollRightBtn")))
-            actions = webdriver.ActionChains(driver)
-            actions.click_and_hold(btn).pause(2.0).release().perform()
+                driver.get("http://192.168.1.1")
 
-            time.sleep(1)  # Tempo para a rolagem acontecer
+                # Login
+                wait.until(EC.presence_of_element_located((By.ID, "Frm_Username"))).send_keys("multipro")
+                driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
+                driver.find_element(By.ID, "LoginId").click()
 
-            wait.until(EC.element_to_be_clickable((By.ID, "defCfgMgr"))).click()
+                # --- POPUP: Espera 2s e Clica Instantaneamente ---
+                self.after(0, lambda: self.escrever_log("⏳ Aguardando carregamento do pop-up..."))
+                time.sleep(2)
 
-            # 4. Clicar no sub-item "Configuração de gerência padrão"
-            self.after(0, lambda: self.escrever_log("⏳ Clicando em Configuração de gerência padrão..."))
-            # ID do sub-item que agora deve estar visível
-            wait.until(EC.element_to_be_clickable((By.ID, "ConfigUpload"))).click()
-            self.after(0, lambda: self.escrever_log("✅ Submenu aberto."))
+                self.after(0, lambda: self.escrever_log("🖱️ Clicando instantaneamente para fechar pop-up..."))
+                pyautogui.click(655, 378)
+                self.after(0, lambda: self.escrever_log("✅ Pop-up inicial fechado (clique instantâneo)."))
+                time.sleep(1.5)
 
-            # --- FLUXO DE UPLOAD BIN DO H3601P ---
-            self.after(0, lambda: self.escrever_log("⏳ Iniciando Upload do BIN..."))
-            
-            # Ação do gerenciador de arquivos do Windows (pyautogui)
-            time.sleep(2) 
-            pyautogui.write(ARQUIVO_BIN_3601)
-            pyautogui.press('enter')
-            self.after(0, lambda: self.escrever_log("✅ Arquivo selecionado!."))
-            
-            # 5. Clicar no botão 'Restaurar Configuração'
-            self.after(0, lambda: self.escrever_log("⏳ Clicando em Restaurar Configuração..."))
-            wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
-            self.after(0, lambda: self.escrever_log("✅ Botão Restaurar clicado."))
-            
-            # 6. Clicar no botão 'OK' do pop-up de confirmação
-            self.after(0, lambda: self.escrever_log("⏳ Confirmando pop-up..."))
-            wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
-            self.after(0, lambda: self.escrever_log("✅ Confirmação enviada!."))
-            
-            # --- PAUSA DE 10 SEGUNDOS APÓS CONFIRMAÇÃO ---
-            self.after(0, lambda: self.escrever_log("⏳ Aguardando 10 segundos para iniciar Cadastro..."))
-            time.sleep(10) 
-            
-            driver.quit()
-            
-            # Chamar Janela de Cadastro com SN capturado
-            self.janela_de_cadastro(sn_extraido)
+                # --- Sai da config rápida ---
+                self.after(0, lambda: self.escrever_log("⏳ Clicando em sair da configuração rápida..."))
+                wait.until(EC.element_to_be_clickable((By.ID, "Btn_Close"))).click()
+                self.after(0, lambda: self.escrever_log("✅ Saiu da configuração rápida."))
 
-        except Exception as e:
-            self.after(0, lambda: self.escrever_log(f"❌ Erro Acesso: {str(e).splitlines()[0]}"))
-            if driver: driver.quit()
-            self.esperando_troca_de_cabo = False 
-        finally:
-            if self.lock_execucao.locked(): self.lock_execucao.release()
+                # --- Navegação Robusta ---
+
+                # 1. Clicar em "Gerenciamento & Diagnóstico"
+                self.after(0, lambda: self.escrever_log("⏳ Aguardando menu Gerenciamento..."))
+                # antes de cada interação garantimos estar no conteúdo principal
+                driver.switch_to.default_content()
+                wait.until(EC.element_to_be_clickable((By.ID, "mgrAndDiag"))).click()
+                self.after(0, lambda: self.escrever_log("✅ Menu Gerenciamento aberto."))
+
+                # 2. Captura do Serial
+                self.after(0, lambda: self.escrever_log("⏳ Capturando Serial Number..."))
+                driver.switch_to.default_content()
+                campo_sn = wait.until(EC.presence_of_element_located((By.ID, "SerialNumber")))
+                sn_extraido = campo_sn.get_attribute("title").strip().upper()
+                self.after(0, lambda s=sn_extraido: self.escrever_log(f"🔢 SN Capturado: {s}"))
+
+                # 3. Clicar em "Gerenciamento de sistema"
+                self.after(0, lambda: self.escrever_log("⏳ Expandindo submenu Sistema..."))
+                driver.switch_to.default_content()
+                wait.until(EC.element_to_be_clickable((By.ID, "devMgr"))).click()
+
+                # --- NOVO: Fazer o scroll para a direita para ver o menu ---
+                self.after(0, lambda: self.escrever_log("⏳ Fazendo scroll para a direita..."))
+                driver.switch_to.default_content()
+                btn = wait.until(EC.element_to_be_clickable((By.ID, "scrollRightBtn")))
+                actions = webdriver.ActionChains(driver)
+                actions.click_and_hold(btn).pause(2.0).release().perform()
+
+                time.sleep(1)  # Tempo para a rolagem acontecer
+
+                wait.until(EC.element_to_be_clickable((By.ID, "defCfgMgr"))).click()
+
+                wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
+
+                # após clicar na barra temos toda a sequência de upload/configuração
+                wait.until(EC.element_to_be_clickable((By.ID, "defConfigUpload"))).click()
+                self.after(0, lambda: self.escrever_log("⏳ Iniciando Upload do BIN..."))
+                time.sleep(2)
+                pyautogui.write(ARQUIVO_BIN_3601)
+                pyautogui.press('enter')
+                self.after(0, lambda: self.escrever_log("✅ Arquivo selecionado!."))
+
+                self.after(0, lambda: self.escrever_log("⏳ Clicando em Restaurar Configuração..."))
+                wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
+                self.after(0, lambda: self.escrever_log("✅ Botão Restaurar clicado."))
+
+                self.after(0, lambda: self.escrever_log("⏳ Confirmando pop-up..."))
+                wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
+                self.after(0, lambda: self.escrever_log("✅ Confirmação enviada!."))
+
+                self.after(0, lambda: self.escrever_log("⏳ Aguardando 10 segundos para iniciar Cadastro..."))
+                time.sleep(10)
+
+                driver.quit()
+                self.janela_de_cadastro(sn_extraido)
+                return  # executado com sucesso, sai do método
+
+            except WebDriverException as e:
+                texto = str(e)
+                if "target frame detached" in texto and attempts > 1:
+                    self.after(0, lambda: self.escrever_log("⚠️ Frame desconectado. reiniciando tentativa..."))
+                    if driver:
+                        driver.quit()
+                    attempts -= 1
+                    continue  # tenta novamente
+                # não é caso retriable ou esgotou tentativas
+                self.after(0, lambda: self.escrever_log(f"❌ Erro Acesso: {texto.splitlines()[0]}"))
+                if driver:
+                    driver.quit()
+                self.esperando_troca_de_cabo = False
+                return
+            except Exception as e:
+                self.after(0, lambda: self.escrever_log(f"❌ Erro Acesso: {str(e).splitlines()[0]}"))
+                if driver:
+                    driver.quit()
+                self.esperando_troca_de_cabo = False
+                return
+            finally:
+                if self.lock_execucao.locked():
+                    self.lock_execucao.release()
+
+        # se esgotaram as tentativas sem sucesso
+        self.esperando_troca_de_cabo = False
 
     # ================================================================
     # JANELA DE CADASTRO (UNIFICADA)
