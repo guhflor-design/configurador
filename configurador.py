@@ -218,7 +218,7 @@ class PainelAutomacao(ctk.CTk):
             # 6. Clicar no botão 'OK' do pop-up de confirmação
             self.after(0, lambda: self.escrever_log("⏳ Confirmando pop-up..."))
             wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
-            self.after(0, lambda: self.escrever_log("✅ Confirmação enviada."))
+            self.after(0, lambda: self.escrever_log("✅ Confirmação enviada!."))
             
             # --- PAUSA DE 10 SEGUNDOS APÓS CONFIRMAÇÃO ---
             self.after(0, lambda: self.escrever_log("⏳ Aguardando 10 segundos para iniciar Cadastro..."))
