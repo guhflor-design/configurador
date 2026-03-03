@@ -186,13 +186,14 @@ class PainelAutomacao(ctk.CTk):
             self.after(0, lambda: self.escrever_log("⏳ Fazendo scroll para a direita..."))
             
             # Pega a localização do botão na tela para garantir o clique
-            btn_scroll = wait.until(EC.presence_of_element_located((By.ID, "scrollRightBtn")))
-            location = btn_scroll.location_once_scrolled_into_view
-            
-            # Clica usando PyAutoGUI baseado na posição do Selenium
-            pyautogui.click(location['x'] + 10, location['y'] + 130) # Ajuste de offset para o clique
-            
-            time.sleep(1) # Tempo para a rolagem acontecer
+            # precisamos clicar e segurar para rolar o painel
+            btn = wait.until(EC.element_to_be_clickable((By.ID, "scrollRightBtn")))
+            actions = webdriver.ActionChains(driver)
+            actions.click_and_hold(btn).pause(2.0).release().perform()
+
+            time.sleep(1)  # Tempo para a rolagem acontecer
+
+            wait.until(EC.element_to_be_clickable((By.ID, "defCfgMgr"))).click()
 
             # 4. Clicar no sub-item "Configuração de gerência padrão"
             self.after(0, lambda: self.escrever_log("⏳ Clicando em Configuração de gerência padrão..."))
