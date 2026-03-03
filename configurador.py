@@ -208,7 +208,7 @@ class PainelAutomacao(ctk.CTk):
             time.sleep(2) 
             pyautogui.write(ARQUIVO_BIN_3601)
             pyautogui.press('enter')
-            self.after(0, lambda: self.escrever_log("✅ Arquivo selecionado."))
+            self.after(0, lambda: self.escrever_log("✅ Arquivo selecionado!."))
             
             # 5. Clicar no botão 'Restaurar Configuração'
             self.after(0, lambda: self.escrever_log("⏳ Clicando em Restaurar Configuração..."))
