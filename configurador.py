@@ -201,11 +201,14 @@ class PainelAutomacao(ctk.CTk):
                 # --- NOVO: Fazer o scroll para a direita para ver o menu ---
                 self.after(0, lambda: self.escrever_log("⏳ Fazendo scroll para a direita..."))
                 driver.switch_to.default_content()
-                btn = wait.until(EC.element_to_be_clickable((By.ID, "scrollRightBtn")))
-                for _ in range(5):
-                    btn.click()
-                    time.sleep(0.3)
-                time.sleep(1)  # Tempo final para a rolagem completar
+                driver.execute_script("""
+                    var btn = document.getElementById('scrollRightBtn');
+                    var container = btn.closest('div[style*="overflow"]') || btn.parentElement.parentElement;
+                    if (container) {
+                        container.scrollLeft = container.scrollWidth;
+                    }
+                """)
+                time.sleep(1)  # Tempo para a rolagem completar
 
                 wait.until(EC.element_to_be_clickable((By.ID, "defCfgMgr"))).click()
 
