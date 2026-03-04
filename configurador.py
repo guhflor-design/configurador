@@ -285,23 +285,34 @@ class PainelAutomacao(ctk.CTk):
             self.after(0, lambda: self.escrever_log("⏳ Entrou no módulo. Aguardando 3s..."))
             time.sleep(3) # PAUSA TESTE
 
-            # 3. NAVEGAÇÃO NO MENU LATERAL
-            # Clicar em 'Estoque' (Pai)
-            menu_estoque = wait.until(EC.element_to_be_clickable((By.XPATH, "//li[contains(@class, 'nav-item')]//span[contains(text(), 'Estoque')]")))
+            # ==========================================
+            # 3. NAVEGAÇÃO NO MENU LATERAL (REFEITA POR ÍCONE)
+            # ==========================================
+            self.after(0, lambda: self.escrever_log("⏳ Expandindo Menu Estoque via Ícone..."))
+            
+            # Localiza a div do título que contém o ícone de caixas (fa-boxes)
+            xpath_estoque = "//div[contains(@class, 'menu-group-title')][.//i[contains(@class, 'fa-boxes')]]"
+            menu_estoque = wait.until(EC.presence_of_element_located((By.XPATH, xpath_estoque)))
+            
+            # Garante que o elemento está visível e clica via JS para disparar o toggleSubmenu
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", menu_estoque)
+            time.sleep(1)
             driver.execute_script("arguments[0].click();", menu_estoque)
-            self.after(0, lambda: self.escrever_log("⏳ Abriu menu lateral. Aguardando 3s..."))
+            
+            self.after(0, lambda: self.escrever_log("✅ Menu expandido. Aguardando submenus..."))
+            time.sleep(3) # PAUSA TESTE
+
+            # --- SUBMENU: ESTOQUE GERAL ---
+            self.after(0, lambda: self.escrever_log("⏳ Clicando em Estoque Geral..."))
+            sub_geral = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(., 'Estoque Geral')]")))
+            driver.execute_script("arguments[0].click();", sub_geral)
             time.sleep(3) # PAUSA TESTE
             
-            # Clicar em 'Estoque Geral'
-            sub_estoque_geral = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Estoque Geral')]")))
-            driver.execute_script("arguments[0].click();", sub_estoque_geral)
-            self.after(0, lambda: self.escrever_log("⏳ Entrou em Estoque Geral. Aguardando 3s..."))
-            time.sleep(3) # PAUSA TESTE
-            
-            # Clicar em 'Entrada'
-            btn_entrada = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Entrada')]")))
-            driver.execute_script("arguments[0].click();", btn_entrada)
-            self.after(0, lambda: self.escrever_log("⏳ Carregando tela de Entrada. Aguardando 3s..."))
+            # --- SUBMENU: ENTRADA ---
+            self.after(0, lambda: self.escrever_log("⏳ Clicando em Entrada..."))
+            sub_entrada = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(., 'Entrada')]")))
+            driver.execute_script("arguments[0].click();", sub_entrada)
+            self.after(0, lambda: self.escrever_log("✅ Tela de Entrada alcançada!"))
             time.sleep(3) # PAUSA TESTE
 
             # 4. BUSCA DO PRODUTO
