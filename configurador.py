@@ -162,107 +162,59 @@ class PainelAutomacao(ctk.CTk):
                 wait.until(EC.presence_of_element_located((By.ID, "Frm_Username"))).send_keys("multipro")
                 driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
                 driver.find_element(By.ID, "LoginId").click()
+                self.after(0, lambda: self.escrever_log("✅ Login realizado."))
 
-                # --- POPUP: Espera 2s e Clica Instantaneamente ---
-                self.after(0, lambda: self.escrever_log("⏳ Aguardando carregamento do pop-up..."))
                 time.sleep(2)
-
-                self.after(0, lambda: self.escrever_log("🖱️ Clicando instantaneamente para fechar pop-up..."))
                 pyautogui.click(655, 378)
-                self.after(0, lambda: self.escrever_log("✅ Pop-up inicial fechado (clique instantâneo)."))
                 time.sleep(1.5)
-
-                # --- Sai da config rápida ---
-                self.after(0, lambda: self.escrever_log("⏳ Clicando em sair da configuração rápida..."))
                 wait.until(EC.element_to_be_clickable((By.ID, "Btn_Close"))).click()
-                self.after(0, lambda: self.escrever_log("✅ Saiu da configuração rápida."))
 
-                # --- Navegação Robusta ---
-
-                # 1. Clicar em "Gerenciamento & Diagnóstico"
-                self.after(0, lambda: self.escrever_log("⏳ Aguardando menu Gerenciamento..."))
-                # antes de cada interação garantimos estar no conteúdo principal
                 driver.switch_to.default_content()
                 wait.until(EC.element_to_be_clickable((By.ID, "mgrAndDiag"))).click()
-                self.after(0, lambda: self.escrever_log("✅ Menu Gerenciamento aberto."))
 
-                # 2. Captura do Serial
-                self.after(0, lambda: self.escrever_log("⏳ Capturando Serial Number..."))
                 driver.switch_to.default_content()
                 campo_sn = wait.until(EC.presence_of_element_located((By.ID, "SerialNumber")))
                 sn_extraido = campo_sn.get_attribute("title").strip().upper()
                 self.after(0, lambda s=sn_extraido: self.escrever_log(f"🔢 SN Capturado: {s}"))
 
-                # 3. Clicar em "Gerenciamento de sistema"
-                self.after(0, lambda: self.escrever_log("⏳ Expandindo submenu Sistema..."))
                 driver.switch_to.default_content()
                 wait.until(EC.element_to_be_clickable((By.ID, "devMgr"))).click()
 
-                # --- NOVO: Fazer o scroll para a direita para ver o menu ---
-                self.after(0, lambda: self.escrever_log("⏳ Fazendo scroll para a direita..."))
+                # Navegação e upload
                 driver.switch_to.default_content()
                 btn = wait.until(EC.element_to_be_clickable((By.ID, "scrollRightBtn")))
                 actions = webdriver.ActionChains(driver)
                 actions.click_and_hold(btn).perform()
                 time.sleep(2)
                 actions.release().perform()
-                time.sleep(1)  # Tempo para a rolagem acontecer
+                time.sleep(1)
 
-                try:
-                    self.after(0, lambda: self.escrever_log("⏳ Clicando em defCfgMgr..."))
-                    wait.until(EC.element_to_be_clickable((By.ID, "defCfgMgr"))).click()
-                    self.after(0, lambda: self.escrever_log("✅ defCfgMgr clicado."))
-                except Exception as e:
-                    self.after(0, lambda: self.escrever_log(f"❌ Erro em defCfgMgr: {str(e)}"))
-                    raise
-
-                try:
-                    self.after(0, lambda: self.escrever_log("⏳ Clicando em DefConfUploadBar..."))
-                    wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
-                    self.after(0, lambda: self.escrever_log("✅ DefConfUploadBar clicado."))
-                except Exception as e:
-                    self.after(0, lambda: self.escrever_log(f"❌ Erro em DefConfUploadBar: {str(e)}"))
-                    raise
-
-                try:
-                    self.after(0, lambda: self.escrever_log("⏳ Aguardando defConfigUpload..."))
-                    elem = wait.until(EC.presence_of_element_located((By.ID, "defConfigUpload")))
-                    time.sleep(1)  # Espera extra para elemento estar completamente renderizado
-                    self.after(0, lambda: self.escrever_log("⏳ Clicando em defConfigUpload via JavaScript..."))
-                    driver.execute_script("arguments[0].click();", elem)
-                    self.after(0, lambda: self.escrever_log("✅ defConfigUpload clicado via JS."))
-                except Exception as e:
-                    self.after(0, lambda: self.escrever_log(f"❌ Erro em defConfigUpload: {str(e)}"))
-                    raise
+                wait.until(EC.element_to_be_clickable((By.ID, "defCfgMgr"))).click()
+                wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
+                elem = wait.until(EC.presence_of_element_located((By.ID, "defConfigUpload")))
+                time.sleep(1)
+                driver.execute_script("arguments[0].click();", elem)
 
                 time.sleep(2)
                 try:
-                    self.after(0, lambda: self.escrever_log("⏳ Procurando input file escondido..."))
-                    # Tenta encontrar input file que pode estar escondido
+                    driver.execute_script("""
+                        var inputs = document.querySelectorAll("input[type='file']");
+                        inputs.forEach(input => input.style.display = 'block');
+                    """)
+                    time.sleep(0.5)
                     file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
-                    self.after(0, lambda: self.escrever_log("✅ Input file encontrado, enviando caminho..."))
                     file_input.send_keys(ARQUIVO_BIN_3601)
-                    self.after(0, lambda: self.escrever_log("✅ Caminho enviado sem abrir gerenciador."))
-                except:
-                    # Se não encontrou input file escondido, clica no botão e usa send_keys no gerenciador
-                    self.after(0, lambda: self.escrever_log("⏳ Clicando em defConfigUpload..."))
-                    elem = driver.find_element(By.ID, "defConfigUpload")
-                    driver.execute_script("arguments[0].click();", elem)
                     time.sleep(1)
-                    self.after(0, lambda: self.escrever_log(f"⏳ Enviando caminho do arquivo: {ARQUIVO_BIN_3601}"))
-                    driver.find_element(By.CSS_SELECTOR, "input[type='file']").send_keys(ARQUIVO_BIN_3601)
-                    self.after(0, lambda: self.escrever_log("✅ Caminho do arquivo enviado."))
-                self.after(0, lambda: self.escrever_log("✅ Arquivo selecionado!."))
+                    pyautogui.press('esc')
+                    time.sleep(0.5)
+                except Exception as e:
+                    self.after(0, lambda: self.escrever_log(f"❌ Erro no upload: {str(e)}"))
+                    raise
 
-                self.after(0, lambda: self.escrever_log("⏳ Clicando em Restaurar Configuração..."))
+                self.after(0, lambda: self.escrever_log("⏳ Enviando configuração..."))
                 wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
-                self.after(0, lambda: self.escrever_log("✅ Botão Restaurar clicado."))
-
-                self.after(0, lambda: self.escrever_log("⏳ Confirmando pop-up..."))
                 wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
-                self.after(0, lambda: self.escrever_log("✅ Confirmação enviada!."))
-
-                self.after(0, lambda: self.escrever_log("⏳ Aguardando 10 segundos para iniciar Cadastro..."))
+                self.after(0, lambda: self.escrever_log("✅ Configuração enviada. Aguardando..."))
                 time.sleep(10)
 
                 driver.quit()
@@ -316,22 +268,32 @@ class PainelAutomacao(ctk.CTk):
             driver.find_element(By.ID, "password").send_keys(PASS_SISTEMA)
             driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
             
-            # Navegação
-            wait.until(EC.element_to_be_clickable((By.XPATH, "//h3[contains(., 'Estoque')]"))).click()
-            menu_pai = wait.until(EC.presence_of_element_located((By.XPATH, "//div[contains(., 'Estoque')]")))
-            driver.execute_script("arguments[0].click();", menu_pai)
+            # Navegação até Entrada
+            self.after(0, lambda: self.escrever_log("⏳ Clicando em Estoque..."))
+            wait.until(EC.element_to_be_clickable((By.XPATH, "//h3[contains(., 'Estoque') and not(contains(text(), 'Alertas')]"))).click()
+            time.sleep(1)
             
-            submenu = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(., 'Estoque Geral')]")))
-            driver.execute_script("arguments[0].click();", submenu)
-            wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(., 'Estoque Geral')]"))).click()
-            wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(., 'Entrada')]"))).click()
+            self.after(0, lambda: self.escrever_log("⏳ Clicando no submenu Estoque..."))
+            wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Estoque') and not(contains(text(), 'Geral'))]"))).click()
+            time.sleep(1)
+            
+            self.after(0, lambda: self.escrever_log("⏳ Clicando em Estoque Geral..."))
+            wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Estoque Geral')]"))).click()
+            time.sleep(1)
+            
+            self.after(0, lambda: self.escrever_log("⏳ Clicando em Entrada..."))
+            wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Entrada')]"))).click()
+            time.sleep(1.5)
+            self.after(0, lambda: self.escrever_log("✅ Chegou em Entrada."))
             
             # Busca do Produto e preenchimento do SN
+            self.after(0, lambda: self.escrever_log(f"⏳ Buscando produto: {nome_produto}"))
             campo_busca = wait.until(EC.visibility_of_element_located((By.ID, "busca_produto")))
             campo_busca.send_keys(nome_produto)
             campo_busca.send_keys(Keys.ENTER)
             time.sleep(2)
 
+            self.after(0, lambda: self.escrever_log(f"⏳ Preenchendo SN: {serial}"))
             campo_serial = wait.until(EC.presence_of_element_located((By.ID, "modal_mac_address")))
             campo_serial.clear()
             campo_serial.send_keys(serial)
