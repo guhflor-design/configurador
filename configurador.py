@@ -202,8 +202,10 @@ class PainelAutomacao(ctk.CTk):
                 self.after(0, lambda: self.escrever_log("⏳ Fazendo scroll para a direita..."))
                 driver.switch_to.default_content()
                 btn = wait.until(EC.element_to_be_clickable((By.ID, "scrollRightBtn")))
-                btn.click()
-                time.sleep(2)  # Tempo para a rolagem acontecer
+                for _ in range(5):
+                    btn.click()
+                    time.sleep(0.3)
+                time.sleep(1)  # Tempo final para a rolagem completar
 
                 wait.until(EC.element_to_be_clickable((By.ID, "defCfgMgr"))).click()
 
