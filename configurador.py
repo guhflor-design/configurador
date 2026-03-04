@@ -237,13 +237,21 @@ class PainelAutomacao(ctk.CTk):
 
                 time.sleep(2)
                 try:
+                    self.after(0, lambda: self.escrever_log("⏳ Procurando input file escondido..."))
+                    # Tenta encontrar input file que pode estar escondido
+                    file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
+                    self.after(0, lambda: self.escrever_log("✅ Input file encontrado, enviando caminho..."))
+                    file_input.send_keys(ARQUIVO_BIN_3601)
+                    self.after(0, lambda: self.escrever_log("✅ Caminho enviado sem abrir gerenciador."))
+                except:
+                    # Se não encontrou input file escondido, clica no botão e usa send_keys no gerenciador
+                    self.after(0, lambda: self.escrever_log("⏳ Clicando em defConfigUpload..."))
+                    elem = driver.find_element(By.ID, "defConfigUpload")
+                    driver.execute_script("arguments[0].click();", elem)
+                    time.sleep(1)
                     self.after(0, lambda: self.escrever_log(f"⏳ Enviando caminho do arquivo: {ARQUIVO_BIN_3601}"))
-                    elem_file = driver.find_element(By.ID, "defConfigUpload")
-                    elem_file.send_keys(ARQUIVO_BIN_3601)
+                    driver.find_element(By.CSS_SELECTOR, "input[type='file']").send_keys(ARQUIVO_BIN_3601)
                     self.after(0, lambda: self.escrever_log("✅ Caminho do arquivo enviado."))
-                except Exception as e:
-                    self.after(0, lambda: self.escrever_log(f"❌ Erro ao enviar arquivo: {str(e)}"))
-                    raise
                 self.after(0, lambda: self.escrever_log("✅ Arquivo selecionado!."))
 
                 self.after(0, lambda: self.escrever_log("⏳ Clicando em Restaurar Configuração..."))
