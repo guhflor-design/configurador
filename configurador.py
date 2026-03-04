@@ -255,60 +255,86 @@ class PainelAutomacao(ctk.CTk):
         modelo_atual = self.combo_modelo.get()
         nome_produto = NOMES_PRODUTOS.get(modelo_atual)
 
-        self.after(0, lambda: self.escrever_log(f"📋 Abrindo JANELA DE CADASTRO para {modelo_atual}..."))
+        self.after(0, lambda: self.escrever_log(f"📋 MODO TESTE: Iniciando Cadastro: {modelo_atual}..."))
+        
         opts = Options()
-        driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
-        driver.maximize_window()
-        wait = WebDriverWait(driver, 20)
+        opts.add_argument("--disable-blink-features=AutomationControlled")
+        driver = None
         
         try:
+            driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
+            driver.maximize_window()
+            wait = WebDriverWait(driver, 20)
+            
+            # 1. ACESSO E LOGIN
             driver.get(LINK_SISTEMA)
-            # Login
+            time.sleep(3) # PAUSA TESTE
+            
             wait.until(EC.presence_of_element_located((By.NAME, "username"))).send_keys(USER_SISTEMA)
+            time.sleep(3) # PAUSA TESTE
+            
             driver.find_element(By.ID, "password").send_keys(PASS_SISTEMA)
+            time.sleep(3) # PAUSA TESTE
+            
             driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
+            self.after(0, lambda: self.escrever_log("✅ Login realizado. Aguardando 3s..."))
+            time.sleep(3) # PAUSA TESTE
             
-            # Navegação até Entrada
-            self.after(0, lambda: self.escrever_log("⏳ Clicando em Estoque..."))
-            wait.until(EC.element_to_be_clickable((By.XPATH, "//h3[contains(., 'Estoque') and not(contains(text(), 'Alertas')]"))).click()
-            time.sleep(1)
-            
-            self.after(0, lambda: self.escrever_log("⏳ Clicando no submenu Estoque..."))
-            wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Estoque') and not(contains(text(), 'Geral'))]"))).click()
-            time.sleep(1)
-            
-            self.after(0, lambda: self.escrever_log("⏳ Clicando em Estoque Geral..."))
-            wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Estoque Geral')]"))).click()
-            time.sleep(1)
-            
-            self.after(0, lambda: self.escrever_log("⏳ Clicando em Entrada..."))
-            wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Entrada')]"))).click()
-            time.sleep(1.5)
-            self.after(0, lambda: self.escrever_log("✅ Chegou em Entrada."))
-            
-            # Busca do Produto e preenchimento do SN
-            self.after(0, lambda: self.escrever_log(f"⏳ Buscando produto: {nome_produto}"))
-            campo_busca = wait.until(EC.visibility_of_element_located((By.ID, "busca_produto")))
-            campo_busca.send_keys(nome_produto)
-            campo_busca.send_keys(Keys.ENTER)
-            time.sleep(2)
+            # 2. ENTRAR NO MÓDULO DE ESTOQUE (DASHBOARD)
+            wait.until(EC.element_to_be_clickable((By.XPATH, "//h3[contains(text(), 'Estoque')]"))).click()
+            self.after(0, lambda: self.escrever_log("⏳ Entrou no módulo. Aguardando 3s..."))
+            time.sleep(3) # PAUSA TESTE
 
-            self.after(0, lambda: self.escrever_log(f"⏳ Preenchendo SN: {serial}"))
+            # 3. NAVEGAÇÃO NO MENU LATERAL
+            # Clicar em 'Estoque' (Pai)
+            menu_estoque = wait.until(EC.element_to_be_clickable((By.XPATH, "//li[contains(@class, 'nav-item')]//span[contains(text(), 'Estoque')]")))
+            driver.execute_script("arguments[0].click();", menu_estoque)
+            self.after(0, lambda: self.escrever_log("⏳ Abriu menu lateral. Aguardando 3s..."))
+            time.sleep(3) # PAUSA TESTE
+            
+            # Clicar em 'Estoque Geral'
+            sub_estoque_geral = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Estoque Geral')]")))
+            driver.execute_script("arguments[0].click();", sub_estoque_geral)
+            self.after(0, lambda: self.escrever_log("⏳ Entrou em Estoque Geral. Aguardando 3s..."))
+            time.sleep(3) # PAUSA TESTE
+            
+            # Clicar em 'Entrada'
+            btn_entrada = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Entrada')]")))
+            driver.execute_script("arguments[0].click();", btn_entrada)
+            self.after(0, lambda: self.escrever_log("⏳ Carregando tela de Entrada. Aguardando 3s..."))
+            time.sleep(3) # PAUSA TESTE
+
+            # 4. BUSCA DO PRODUTO
+            campo_busca = wait.until(EC.visibility_of_element_located((By.ID, "busca_produto")))
+            campo_busca.clear()
+            campo_busca.send_keys(nome_produto)
+            self.after(0, lambda: self.escrever_log("⏳ Produto digitado. Aguardando 3s para dar ENTER..."))
+            time.sleep(3) # PAUSA TESTE
+            
+            campo_busca.send_keys(Keys.ENTER)
+            time.sleep(3) # PAUSA TESTE
+
+            # 5. PREENCHIMENTO DO SERIAL
             campo_serial = wait.until(EC.presence_of_element_located((By.ID, "modal_mac_address")))
             campo_serial.clear()
             campo_serial.send_keys(serial)
-            self.after(0, lambda: self.escrever_log(f"✅ {modelo_atual} cadastrado com sucesso!"))
-
-            # Salva contador
+            self.after(0, lambda: self.escrever_log(f"🔢 Serial {serial} preenchido. Finalizando..."))
+            time.sleep(3) # PAUSA TESTE
+            
+            # 6. FINALIZAÇÃO E CONTADOR
             self.total_finalizados += 1
             self.after(0, lambda: self.val_contador.configure(text=str(self.total_finalizados)))
             ARQUIVO_CONTADOR.write_text(str(self.total_finalizados), encoding="utf-8")
-            
+            self.after(0, lambda: self.escrever_log("🚀 Ciclo completo concluído com sucesso!"))
+
         except Exception as e:
-            self.after(0, lambda: self.escrever_log(f"❌ Erro Cadastro: {str(e)}"))
+            self.after(0, lambda err=e: self.escrever_log(f"❌ Erro no Cadastro: {str(err).splitlines()[0]}"))
         finally:
-            driver.quit()
+            if driver:
+                driver.quit()
             self.esperando_troca_de_cabo = False
+            if self.lock_execucao.locked():
+                self.lock_execucao.release()
 
     def resetar_contador(self):
         self.total_finalizados = 0
