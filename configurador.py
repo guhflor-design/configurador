@@ -255,9 +255,10 @@ class PainelAutomacao(ctk.CTk):
         modelo_atual = self.combo_modelo.get()
         nome_produto = NOMES_PRODUTOS.get(modelo_atual)
 
-        self.after(0, lambda: self.escrever_log(f"📋 MODO TESTE: Iniciando Cadastro: {modelo_atual}..."))
+        self.after(0, lambda: self.escrever_log(f"🚀 MODO PRODUÇÃO: Iniciando Cadastro: {modelo_atual}..."))
         
         opts = Options()
+        opts.add_experimental_option("detach", True) # Garante que a janela não feche
         opts.add_argument("--disable-blink-features=AutomationControlled")
         driver = None
         
@@ -268,81 +269,66 @@ class PainelAutomacao(ctk.CTk):
             
             # 1. ACESSO E LOGIN
             driver.get(LINK_SISTEMA)
-            time.sleep(3) # PAUSA TESTE
+            time.sleep(0.5) 
             
             wait.until(EC.presence_of_element_located((By.NAME, "username"))).send_keys(USER_SISTEMA)
-            time.sleep(3) # PAUSA TESTE
+            time.sleep(0.5) 
             
             driver.find_element(By.ID, "password").send_keys(PASS_SISTEMA)
-            time.sleep(3) # PAUSA TESTE
+            time.sleep(0.5) 
             
             driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
-            self.after(0, lambda: self.escrever_log("✅ Login realizado. Aguardando 3s..."))
-            time.sleep(3) # PAUSA TESTE
+            time.sleep(0.5) 
             
-            # 2. ENTRAR NO MÓDULO DE ESTOQUE (DASHBOARD)
+            # 2. ENTRAR NO MÓDULO DE ESTOQUE
             wait.until(EC.element_to_be_clickable((By.XPATH, "//h3[contains(text(), 'Estoque')]"))).click()
-            self.after(0, lambda: self.escrever_log("⏳ Entrou no módulo. Aguardando 3s..."))
-            time.sleep(3) # PAUSA TESTE
+            time.sleep(0.5) 
 
-            # ==========================================
-            # 3. NAVEGAÇÃO NO MENU LATERAL (REFEITA POR ÍCONE)
-            # ==========================================
-            self.after(0, lambda: self.escrever_log("⏳ Expandindo Menu Estoque via Ícone..."))
-            
-            # Localiza a div do título que contém o ícone de caixas (fa-boxes)
+            # 3. NAVEGAÇÃO NO MENU LATERAL (POR ÍCONE)
             xpath_estoque = "//div[contains(@class, 'menu-group-title')][.//i[contains(@class, 'fa-boxes')]]"
             menu_estoque = wait.until(EC.presence_of_element_located((By.XPATH, xpath_estoque)))
             
-            # Garante que o elemento está visível e clica via JS para disparar o toggleSubmenu
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", menu_estoque)
-            time.sleep(1)
+            time.sleep(0.2)
             driver.execute_script("arguments[0].click();", menu_estoque)
-            
-            self.after(0, lambda: self.escrever_log("✅ Menu expandido. Aguardando submenus..."))
-            time.sleep(3) # PAUSA TESTE
+            time.sleep(0.5) 
 
             # --- SUBMENU: ESTOQUE GERAL ---
-            self.after(0, lambda: self.escrever_log("⏳ Clicando em Estoque Geral..."))
             sub_geral = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(., 'Estoque Geral')]")))
             driver.execute_script("arguments[0].click();", sub_geral)
-            time.sleep(3) # PAUSA TESTE
+            time.sleep(0.5) 
             
             # --- SUBMENU: ENTRADA ---
-            self.after(0, lambda: self.escrever_log("⏳ Clicando em Entrada..."))
             sub_entrada = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(., 'Entrada')]")))
             driver.execute_script("arguments[0].click();", sub_entrada)
-            self.after(0, lambda: self.escrever_log("✅ Tela de Entrada alcançada!"))
-            time.sleep(3) # PAUSA TESTE
+            time.sleep(0.5) 
 
             # 4. BUSCA DO PRODUTO
             campo_busca = wait.until(EC.visibility_of_element_located((By.ID, "busca_produto")))
             campo_busca.clear()
             campo_busca.send_keys(nome_produto)
-            self.after(0, lambda: self.escrever_log("⏳ Produto digitado. Aguardando 3s para dar ENTER..."))
-            time.sleep(3) # PAUSA TESTE
+            time.sleep(0.5) 
             
             campo_busca.send_keys(Keys.ENTER)
-            time.sleep(3) # PAUSA TESTE
+            time.sleep(0.5) 
 
             # 5. PREENCHIMENTO DO SERIAL
             campo_serial = wait.until(EC.presence_of_element_located((By.ID, "modal_mac_address")))
             campo_serial.clear()
             campo_serial.send_keys(serial)
-            self.after(0, lambda: self.escrever_log(f"🔢 Serial {serial} preenchido. Finalizando..."))
-            time.sleep(3) # PAUSA TESTE
+            self.after(0, lambda: self.escrever_log(f"🔢 Serial {serial} preenchido!"))
+            time.sleep(0.5) 
             
-            # 6. FINALIZAÇÃO E CONTADOR
+            # 6. ATUALIZAR CONTADOR (PERSISTENTE)
             self.total_finalizados += 1
             self.after(0, lambda: self.val_contador.configure(text=str(self.total_finalizados)))
             ARQUIVO_CONTADOR.write_text(str(self.total_finalizados), encoding="utf-8")
-            self.after(0, lambda: self.escrever_log("🚀 Ciclo completo concluído com sucesso!"))
+            self.after(0, lambda: self.escrever_log("🏁 Pronto para finalizar manualmente."))
 
         except Exception as e:
             self.after(0, lambda err=e: self.escrever_log(f"❌ Erro no Cadastro: {str(err).splitlines()[0]}"))
         finally:
-            if driver:
-                driver.quit()
+            # Janela permanece aberta conforme solicitado
             self.esperando_troca_de_cabo = False
             if self.lock_execucao.locked():
                 self.lock_execucao.release()
