@@ -208,16 +208,42 @@ class PainelAutomacao(ctk.CTk):
                 actions.release().perform()
                 time.sleep(1)  # Tempo para a rolagem acontecer
 
-                wait.until(EC.element_to_be_clickable((By.ID, "defCfgMgr"))).click()
+                try:
+                    self.after(0, lambda: self.escrever_log("⏳ Clicando em defCfgMgr..."))
+                    wait.until(EC.element_to_be_clickable((By.ID, "defCfgMgr"))).click()
+                    self.after(0, lambda: self.escrever_log("✅ defCfgMgr clicado."))
+                except Exception as e:
+                    self.after(0, lambda: self.escrever_log(f"❌ Erro em defCfgMgr: {str(e)}"))
+                    raise
 
-                wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
+                try:
+                    self.after(0, lambda: self.escrever_log("⏳ Clicando em DefConfUploadBar..."))
+                    wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
+                    self.after(0, lambda: self.escrever_log("✅ DefConfUploadBar clicado."))
+                except Exception as e:
+                    self.after(0, lambda: self.escrever_log(f"❌ Erro em DefConfUploadBar: {str(e)}"))
+                    raise
 
-                # após clicar na barra temos toda a sequência de upload/configuração
-                wait.until(EC.element_to_be_clickable((By.ID, "defConfigUpload"))).click()
-                self.after(0, lambda: self.escrever_log("⏳ Iniciando Upload do BIN..."))
+                try:
+                    self.after(0, lambda: self.escrever_log("⏳ Aguardando defConfigUpload..."))
+                    elem = wait.until(EC.presence_of_element_located((By.ID, "defConfigUpload")))
+                    time.sleep(1)  # Espera extra para elemento estar completamente renderizado
+                    self.after(0, lambda: self.escrever_log("⏳ Clicando em defConfigUpload via JavaScript..."))
+                    driver.execute_script("arguments[0].click();", elem)
+                    self.after(0, lambda: self.escrever_log("✅ defConfigUpload clicado via JS."))
+                except Exception as e:
+                    self.after(0, lambda: self.escrever_log(f"❌ Erro em defConfigUpload: {str(e)}"))
+                    raise
+
                 time.sleep(2)
-                pyautogui.write(ARQUIVO_BIN_3601)
-                pyautogui.press('enter')
+                try:
+                    self.after(0, lambda: self.escrever_log(f"⏳ Enviando caminho do arquivo: {ARQUIVO_BIN_3601}"))
+                    elem_file = driver.find_element(By.ID, "defConfigUpload")
+                    elem_file.send_keys(ARQUIVO_BIN_3601)
+                    self.after(0, lambda: self.escrever_log("✅ Caminho do arquivo enviado."))
+                except Exception as e:
+                    self.after(0, lambda: self.escrever_log(f"❌ Erro ao enviar arquivo: {str(e)}"))
+                    raise
                 self.after(0, lambda: self.escrever_log("✅ Arquivo selecionado!."))
 
                 self.after(0, lambda: self.escrever_log("⏳ Clicando em Restaurar Configuração..."))
