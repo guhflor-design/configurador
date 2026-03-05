@@ -5,6 +5,7 @@ import threading
 import pyautogui
 import customtkinter as ctk
 from pathlib import Path
+from PIL import Image # Necessário para processar a logo
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -20,17 +21,14 @@ CHROME_PATH = ChromeDriverManager().install()
 DESKTOP_PATH = Path(os.environ["USERPROFILE"]) / "Desktop"
 PASTA_PROG = DESKTOP_PATH / "programa"
 ARQUIVO_CONTADOR = PASTA_PROG / "contador_prod.txt"
+ARQUIVO_LOGO = PASTA_PROG / "logo.png" # Caminho da logo
 
-# Garante que a pasta existe para evitar erro de gravação
 PASTA_PROG.mkdir(parents=True, exist_ok=True)
 
 IP_ACESSO = "http://192.168.1.1"
 IP_POS_CONFIG = "192.168.10.1" 
 
-# CAMINHOS DOS BINS (OneDrive)
-BASE_PATH_6600 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\6600")
-ARQUIVO_BIN_6600 = str(BASE_PATH_6600 / "Versão 02.06.25.bin")
-
+# CAMINHOS DOS BINS
 BASE_PATH_3601 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360")
 ARQUIVO_BIN_3601 = str(BASE_PATH_3601 / "ZTE_H3601P Router Primario Agent.bin")
 
@@ -69,9 +67,21 @@ class PainelAutomacao(ctk.CTk):
         self.frame_sidebar = ctk.CTkFrame(self, fg_color="#112240", border_color="#00b4d8", border_width=2)
         self.frame_sidebar.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
 
-        ctk.CTkLabel(self.frame_sidebar, text="MODELO SELECIONADO:", font=("Segoe UI", 13, "bold"), text_color="#00b4d8").pack(pady=(20, 5))
+        # --- SEÇÃO DA LOGO ---
+        try:
+            if ARQUIVO_LOGO.exists():
+                img_logo = ctk.CTkImage(light_image=Image.open(ARQUIVO_LOGO),
+                                        dark_image=Image.open(ARQUIVO_LOGO),
+                                        size=(220, 80))
+                self.label_logo = ctk.CTkLabel(self.frame_sidebar, image=img_logo, text="")
+                self.label_logo.pack(pady=(20, 10))
+            else:
+                ctk.CTkLabel(self.frame_sidebar, text="ENGEPLUS", font=("Segoe UI", 24, "bold"), text_color="#00b4d8").pack(pady=20)
+        except Exception as e:
+            print(f"Erro ao carregar logo: {e}")
+
+        ctk.CTkLabel(self.frame_sidebar, text="MODELO SELECIONADO:", font=("Segoe UI", 13, "bold"), text_color="#00b4d8").pack(pady=(10, 5))
         
-        # Combo fixo (não permite escrita)
         self.combo_modelo = ctk.CTkComboBox(
             self.frame_sidebar, 
             values=["ZTE F6600P", "ZTE H3601P"], 
@@ -130,8 +140,8 @@ class PainelAutomacao(ctk.CTk):
         try:
             self.after(0, lambda: self.escrever_log("🔓 Acessando H3601P..."))
             opts = Options()
+            opts.add_argument("--window-size=1024,768") 
             driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
-            driver.maximize_window()
             wait = WebDriverWait(driver, 20)
 
             driver.get(IP_ACESSO)
@@ -140,7 +150,7 @@ class PainelAutomacao(ctk.CTk):
             driver.find_element(By.ID, "LoginId").click()
             
             time.sleep(2)
-            pyautogui.click(655, 378) 
+            pyautogui.click(668, 378) 
             time.sleep(1.5)
             wait.until(EC.element_to_be_clickable((By.ID, "Btn_Close"))).click()
 
@@ -183,18 +193,14 @@ class PainelAutomacao(ctk.CTk):
 
     def aguardar_ping_reboot(self):
         self.after(0, lambda: self.escrever_log(f"📡 Aguardando reboot em {IP_POS_CONFIG}..."))
-        
         while True:
-            # Ping rápido silencioso
             response = os.system(f"ping -n 1 -w 1000 {IP_POS_CONFIG} > nul")
             if response == 0:
                 self.after(0, lambda: self.escrever_log("✨ Roteador Online (10.1)! TROQUE O EQUIPAMENTO."))
-                
                 self.total_finalizados += 1
                 self.after(0, lambda: self.val_contador.configure(text=str(self.total_finalizados)))
                 ARQUIVO_CONTADOR.write_text(str(self.total_finalizados), encoding="utf-8")
-                
-                self.esperando_troca_de_cabo = True # Mantém travado até o cabo sair do 10.1
+                self.esperando_troca_de_cabo = True 
                 self.aguardar_desconexao()
                 break
             time.sleep(2)
@@ -203,14 +209,13 @@ class PainelAutomacao(ctk.CTk):
         self.after(0, lambda: self.escrever_log("🔌 Aguardando desconexão do cabo..."))
         while True:
             response = os.system(f"ping -n 1 -w 500 {IP_POS_CONFIG} > nul")
-            if response != 0: # Perdeu o ping, ou seja, cabo foi tirado
+            if response != 0: 
                 self.after(0, lambda: self.escrever_log("✅ Cabo desconectado. Pronto para o próximo!"))
                 self.esperando_troca_de_cabo = False
                 break
             time.sleep(1)
 
     def janela_de_cadastro(self, serial):
-        # Espaço reservado para seu trabalho futuro
         pass
 
     def resetar_contador(self):
