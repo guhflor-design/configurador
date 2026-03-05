@@ -21,7 +21,7 @@ CHROME_PATH = ChromeDriverManager().install()
 DESKTOP_PATH = Path(os.environ["USERPROFILE"]) / "Desktop"
 PASTA_PROG = DESKTOP_PATH / "programa"
 ARQUIVO_CONTADOR = PASTA_PROG / "contador_prod.txt"
-ARQUIVO_LOGO = PASTA_PROG / "logo.png" # Caminho da logo
+ARQUIVO_LOGO = PASTA_PROG / "logo_engeplus.png" # Caminho da logo
 
 PASTA_PROG.mkdir(parents=True, exist_ok=True)
 
