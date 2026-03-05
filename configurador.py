@@ -323,7 +323,7 @@ class PainelAutomacao(ctk.CTk):
             self.total_finalizados += 1
             self.after(0, lambda: self.val_contador.configure(text=str(self.total_finalizados)))
             ARQUIVO_CONTADOR.write_text(str(self.total_finalizados), encoding="utf-8")
-            self.after(0, lambda: self.escrever_log("🏁 Pronto para finalizar manualmente."))
+            self.after(0, lambda: self.escrever_log("🏁 Pronto para finalizar manualmente!"))
 
         except Exception as e:
             self.after(0, lambda err=e: self.escrever_log(f"❌ Erro no Cadastro: {str(err).splitlines()[0]}"))
