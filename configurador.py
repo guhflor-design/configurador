@@ -29,7 +29,9 @@ IP_ACESSO = "http://192.168.1.1"
 IP_POS_CONFIG = "192.168.10.1" 
 
 # CAMINHOS DOS BINS
-BASE_PATH_3601 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360")
+BASE_PATH_3601S = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360\SECUNDARIO")
+ARQUIVO_BIN_3601S = str(BASE_PATH_3601S / "ZTE_H3601P Router Secundário.bin")
+BASE_PATH_3601 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360\PRIMARIO")
 ARQUIVO_BIN_3601 = str(BASE_PATH_3601 / "ZTE_H3601P Router Primario Agent.bin")
 
 class PainelAutomacao(ctk.CTk):
@@ -56,8 +58,14 @@ class PainelAutomacao(ctk.CTk):
 
     def escrever_log(self, msg):
         ts = time.strftime('%H:%M:%S')
+    # 1. Habilita a escrita temporariamente
+        self.log_box.configure(state="normal")
+    # 2. Insere a mensagem com o timestamp
         self.log_box.insert("end", f"[{ts}] > {msg}\n")
+    # 3. Faz o scroll automático para o final
         self.log_box.see("end")
+    # 4. Bloqueia a edição novamente
+        self.log_box.configure(state="disabled")
 
     def _montar_interface(self):
         self.grid_columnconfigure(0, minsize=320)
@@ -84,7 +92,7 @@ class PainelAutomacao(ctk.CTk):
         
         self.combo_modelo = ctk.CTkComboBox(
             self.frame_sidebar, 
-            values=["ZTE F6600P", "ZTE H3601P"], 
+            values=["ZTE F6600P", "ZTE H3601P","ZTE H3601P SECUNDÁRIO"], 
             width=250,
             state="readonly"
         )
@@ -129,6 +137,8 @@ class PainelAutomacao(ctk.CTk):
                             modelo = self.combo_modelo.get()
                             if modelo == "ZTE H3601P":
                                 threading.Thread(target=self.fluxo_zte_3601, daemon=True).start()
+                            elif modelo == "ZTE H3601P SECUNDÁRIO":
+                                threading.Thread(target=self.zte_3601_fluxo_secundario, daemon=True).start()
                             else:
                                 self.escrever_log("🤖 Fluxo F6600P não implementado.")
                                 self.lock_execucao.release()
@@ -222,6 +232,63 @@ class PainelAutomacao(ctk.CTk):
         self.total_finalizados = 0
         self.val_contador.configure(text="0")
         ARQUIVO_CONTADOR.write_text("0", encoding="utf-8")
+    
+    def zte_3601_fluxo_secundario(self):
+        driver = None
+        try:
+            self.after(0, lambda: self.escrever_log("🔓 Acessando H3601P..."))
+            opts = Options()
+            opts.add_argument("--window-size=1024,768") 
+            driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
+            wait = WebDriverWait(driver, 20)
+
+            driver.get(IP_ACESSO)
+            wait.until(EC.presence_of_element_located((By.ID, "Frm_Username"))).send_keys("multipro")
+            driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
+            driver.find_element(By.ID, "LoginId").click()
+            
+            time.sleep(2)
+            pyautogui.click(668, 378) 
+            time.sleep(1.5)
+            wait.until(EC.element_to_be_clickable((By.ID, "Btn_Close"))).click()
+
+            driver.switch_to.default_content()
+            wait.until(EC.element_to_be_clickable((By.ID, "mgrAndDiag"))).click()
+            campo_sn = wait.until(EC.presence_of_element_located((By.ID, "SerialNumber")))
+            sn = campo_sn.get_attribute("title").strip().upper()
+            self.after(0, lambda: self.escrever_log(f"🔢 Serial extraído: {sn}"))
+
+            driver.switch_to.default_content()
+            wait.until(EC.element_to_be_clickable((By.ID, "devMgr"))).click()
+            btn_scroll = wait.until(EC.element_to_be_clickable((By.ID, "scrollRightBtn")))
+            webdriver.ActionChains(driver).click_and_hold(btn_scroll).perform()
+            time.sleep(2)
+            webdriver.ActionChains(driver).release().perform()
+            
+            wait.until(EC.element_to_be_clickable((By.ID, "defCfgMgr"))).click()
+            wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
+            
+            driver.execute_script("document.getElementById('defConfigUpload').style.display = 'block';")
+            driver.find_element(By.ID, "defConfigUpload").send_keys(ARQUIVO_BIN_3601S)
+            
+            time.sleep(1)
+            wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
+            wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
+            
+            self.after(0, lambda: self.escrever_log("⏳ Configuração enviada! Janela fechando em 10s..."))
+            time.sleep(10) 
+            driver.quit()
+
+            self.janela_de_cadastro(sn)
+            self.aguardar_ping_reboot()
+
+        except Exception as e:
+            self.after(0, lambda: self.escrever_log(f"❌ Erro no Fluxo: {str(e).splitlines()[0]}"))
+            if driver: driver.quit()
+            self.esperando_troca_de_cabo = False
+        finally:
+            if self.lock_execucao.locked(): self.lock_execucao.release()
+        
 
 if __name__ == "__main__":
     app = PainelAutomacao()
