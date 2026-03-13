@@ -266,7 +266,7 @@ class PainelAutomacao(ctk.CTk):
             wait.until(EC.element_to_be_clickable((By.ID, "ponSn"))).click()
         
         # Captura do Serial
-            campo_sn = wait.until(EC.presence_of_element_located((By.ID, "sn")))
+            campo_sn = wait.until(EC.presence_of_element_located((By.ID, "Sn")))
             sn = campo_sn.get_attribute("value").strip().upper()
             self.after(0, lambda: self.escrever_log(f"🔢 Serial extraído: {sn}"))
 
