@@ -235,6 +235,9 @@ class PainelAutomacao(ctk.CTk):
         self.val_contador.configure(text="0")
         ARQUIVO_CONTADOR.write_text("0", encoding="utf-8")
 
+    def js_click(self, driver, element):
+        """ Força o clique via JavaScript, ignorando erros de 'elemento sobreposto' """
+        driver.execute_script("arguments[0].click();", element)
 
     def fluxo_f6600p(self):
         driver = None
@@ -256,6 +259,7 @@ class PainelAutomacao(ctk.CTk):
 
         # Sai da configuração rápida
             wait.until(EC.element_to_be_clickable((By.ID, "Outquicksetup"))).click()
+            time.sleep(1.5)
         
         # Navegação com pausas para estabilidade
             self.after(0, lambda: self.escrever_log("Buscando Serial Number..."))
@@ -269,9 +273,11 @@ class PainelAutomacao(ctk.CTk):
             campo_sn = wait.until(EC.presence_of_element_located((By.ID, "Sn")))
             sn = campo_sn.get_attribute("value").strip().upper()
             self.after(0, lambda: self.escrever_log(f"🔢 Serial extraído: {sn}"))
+            time.sleep(1)
 
         # Navegação para Upload
-            wait.until(EC.element_to_be_clickable((By.ID, "mrgAndDiag"))).click()
+            btn_mgr = wait.until(EC.element_to_be_clickable((By.ID, "mrgAndDiag"))).click()
+            self.js_click(driver, btn_mgr)
             wait.until(EC.element_to_be_clickable((By.ID, "devMgr"))).click()
         
         # Clique no scroll e ConfigMgr
