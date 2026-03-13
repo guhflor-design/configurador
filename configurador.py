@@ -33,6 +33,8 @@ BASE_PATH_3601S = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associaç�
 ARQUIVO_BIN_3601S = str(BASE_PATH_3601S / "ZTE_H3601P Router Secundário.bin")
 BASE_PATH_3601 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360\PRIMARIO")
 ARQUIVO_BIN_3601 = str(BASE_PATH_3601 / "ZTE_H3601P Router Primario Agent.bin")
+BASE_PATH_6600 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\6600")
+ARQUIVO_BIN_6600 = str(BASE_PATH_6600 / "Versão 02.06.25.bin")
 
 class PainelAutomacao(ctk.CTk):
     def __init__(self):
@@ -139,9 +141,9 @@ class PainelAutomacao(ctk.CTk):
                                 threading.Thread(target=self.fluxo_zte_3601, daemon=True).start()
                             elif modelo == "ZTE H3601P SECUNDÁRIO":
                                 threading.Thread(target=self.zte_3601_fluxo_secundario, daemon=True).start()
-                            else:
-                                self.escrever_log("🤖 Fluxo F6600P não implementado.")
-                                self.lock_execucao.release()
+                            elif modelo == "ZTE F6600P":
+                                threading.Thread(target=self.fluxo_f6600p, daemon=True).start()
+                                
             except: pass
             time.sleep(1)
 
@@ -232,7 +234,77 @@ class PainelAutomacao(ctk.CTk):
         self.total_finalizados = 0
         self.val_contador.configure(text="0")
         ARQUIVO_CONTADOR.write_text("0", encoding="utf-8")
-    
+
+
+    def fluxo_f6600p(self):
+        driver = None
+        try:
+            self.after(0, lambda: self.escrever_log("🔧 Iniciando fluxo F6600P..."))
+            opts = Options()
+            opts.add_argument("--window-size=1024,768")
+            driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
+            wait = WebDriverWait(driver, 20)
+
+            driver.get(IP_ACESSO)
+            wait.until(EC.presence_of_element_located((By.ID, "Frm_Username"))).send_keys("multipro")
+            driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
+            driver.find_element(By.ID, "LoginId").click()
+
+            time.sleep(2)
+            pyautogui.click(668, 378) 
+            time.sleep(2)
+
+        # Sai da configuração rápida
+            wait.until(EC.element_to_be_clickable((By.ID, "Outquicksetup"))).click()
+        
+        # Navegação com pausas para estabilidade
+            self.after(0, lambda: self.escrever_log("Buscando Serial Number..."))
+            wait.until(EC.element_to_be_clickable((By.ID, "internet"))).click()
+            time.sleep(0.5)
+            wait.until(EC.element_to_be_clickable((By.ID, "ponInfo"))).click()
+            time.sleep(0.5)
+            wait.until(EC.element_to_be_clickable((By.ID, "ponSn"))).click()
+        
+        # Captura do Serial
+            campo_sn = wait.until(EC.presence_of_element_located((By.ID, "sn")))
+            sn = campo_sn.get_attribute("value").strip().upper()
+            self.after(0, lambda: self.escrever_log(f"🔢 Serial extraído: {sn}"))
+
+        # Navegação para Upload
+            wait.until(EC.element_to_be_clickable((By.ID, "mrgAndDiag"))).click()
+            wait.until(EC.element_to_be_clickable((By.ID, "devMgr"))).click()
+        
+        # Clique no scroll e ConfigMgr
+            wait.until(EC.element_to_be_clickable((By.ID, "scrollRightBtn"))).click()
+            wait.until(EC.element_to_be_clickable((By.ID, "ConfigMgr"))).click()
+            wait.until(EC.element_to_be_clickable((By.ID, "DefConfUPloadBar"))).click()
+
+        # Upload do arquivo - Verifique se o ID 'DefCfgUpload' está correto no F6600P
+            self.after(0, lambda: self.escrever_log("Enviando configuração..."))
+            driver.execute_script("document.getElementById('DefCfgUpload').style.display = 'block';")
+        
+        # Tenta encontrar o elemento de upload com segurança
+            upload_element = driver.find_element(By.ID, "DefCfgUpload")
+            if upload_element:
+                upload_element.send_keys(ARQUIVO_BIN_6600)
+                wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
+                wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
+            
+                self.after(0, lambda: self.escrever_log("⏳ Configuração enviada! Janela fechando em 10s..."))
+                time.sleep(10)
+                driver.quit()
+                self.janela_de_cadastro(sn)
+                self.aguardar_ping_reboot()
+            else:
+                raise Exception("Campo de upload não encontrado (ID incorreto)")
+
+        except Exception as e:
+            self.after(0, lambda: self.escrever_log(f"❌ Erro no Fluxo: {str(e).splitlines()[0]}"))
+            if driver: driver.quit()
+            self.esperando_troca_de_cabo = False
+        finally:
+            if self.lock_execucao.locked(): self.lock_execucao.release()
+        
     def zte_3601_fluxo_secundario(self):
         driver = None
         try:
