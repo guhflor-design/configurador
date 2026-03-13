@@ -98,7 +98,7 @@ class PainelAutomacao(ctk.CTk):
             width=250,
             state="readonly"
         )
-        self.combo_modelo.set("ZTE F6600")
+        self.combo_modelo.set("ZTE H3601P")
         self.combo_modelo.pack(pady=10)
 
         ctk.CTkLabel(self.frame_sidebar, text="PRODUÇÃO TOTAL", font=("Segoe UI", 16, "bold"), text_color="#00b4d8").pack(pady=(30, 0))
@@ -257,9 +257,15 @@ class PainelAutomacao(ctk.CTk):
             pyautogui.click(668, 378) 
             time.sleep(2)
 
-        # Sai da configuração rápida
-            wait.until(EC.element_to_be_clickable((By.ID, "Outquicksetup"))).click()
-            time.sleep(1.5)
+        # Tenta sair da configuração rápida, mas continua se o botão não estiver lá
+            try:
+                self.after(0, lambda: self.escrever_log("Tentando fechar configuração rápida..."))
+                # Diminuímos o tempo de espera (timeout) para 3 segundos para não travar o código se não existir
+                btn_out = WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.ID, "Outquicksetup")))
+                self.js_click(driver, btn_out)
+                time.sleep(1.5)
+            except Exception:
+                self.after(0, lambda: self.escrever_log("Botão de saída não encontrado ou já fechado. Seguindo..."))
         
         # Navegação com pausas para estabilidade
             self.after(0, lambda: self.escrever_log("Buscando Serial Number..."))
@@ -276,14 +282,14 @@ class PainelAutomacao(ctk.CTk):
             time.sleep(1)
 
         # Navegação para Upload
-            btn_mgr = wait.until(EC.element_to_be_clickable((By.ID, "mrgAndDiag"))).click()
-            self.js_click(driver, btn_mgr)
+            wait.until(EC.element_to_be_clickable((By.ID, "mgrAndDiag"))).click()
             wait.until(EC.element_to_be_clickable((By.ID, "devMgr"))).click()
         
         # Clique no scroll e ConfigMgr
             wait.until(EC.element_to_be_clickable((By.ID, "scrollRightBtn"))).click()
             wait.until(EC.element_to_be_clickable((By.ID, "ConfigMgr"))).click()
-            wait.until(EC.element_to_be_clickable((By.ID, "DefConfUPloadBar"))).click()
+            time.sleep(0.5)
+            wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
 
         # Upload do arquivo - Verifique se o ID 'DefCfgUpload' está correto no F6600P
             self.after(0, lambda: self.escrever_log("Enviando configuração..."))
