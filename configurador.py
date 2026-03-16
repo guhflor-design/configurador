@@ -14,27 +14,33 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-# ==========================================
-# CONFIGURAÇÕES DE CAMINHOS E IPS
-# ==========================================
+import sys
+import os
+from pathlib import Path
+
+def resource_path(arquivo):
+    """Retorna o caminho correto tanto no .py quanto no .exe"""
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, arquivo)
+    return os.path.join(os.path.abspath("."), arquivo)
+
+
 CHROME_PATH = ChromeDriverManager().install()
 DESKTOP_PATH = Path(os.environ["USERPROFILE"]) / "Desktop"
 PASTA_PROG = DESKTOP_PATH / "programa"
 ARQUIVO_CONTADOR = PASTA_PROG / "contador_prod.txt"
-ARQUIVO_LOGO = PASTA_PROG / "logo_engeplus.png" # Caminho da logo
+ARQUIVO_LOGO = PASTA_PROG / "logo_engeplus.png"
 
 PASTA_PROG.mkdir(parents=True, exist_ok=True)
 
 IP_ACESSO = "http://192.168.1.1"
-IP_POS_CONFIG = "192.168.10.1" 
+IP_POS_CONFIG = "192.168.10.1"
 
-# CAMINHOS DOS BINS
-BASE_PATH_3601S = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360\SECUNDARIO")
-ARQUIVO_BIN_3601S = str(BASE_PATH_3601S / "ZTE_H3601P Router Secundário.bin")
-BASE_PATH_3601 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360\PRIMARIO")
-ARQUIVO_BIN_3601 = str(BASE_PATH_3601 / "ZTE_H3601P Router Primario Agent.bin")
-BASE_PATH_6600 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\6600")
-ARQUIVO_BIN_6600 = str(BASE_PATH_6600 / "Versão 02.06.25.bin")
+
+# BINS EMBUTIDOS NO EXECUTÁVEL
+ARQUIVO_BIN_3601S = resource_path("ZTE_H3601P Router Secundário.bin")
+ARQUIVO_BIN_3601 = resource_path("ZTE_H3601P Router Primario Agent.bin")
+ARQUIVO_BIN_6600 = resource_path("Versão 02.06.25.bin")
 
 class PainelAutomacao(ctk.CTk):
     def __init__(self):
@@ -360,7 +366,7 @@ class PainelAutomacao(ctk.CTk):
             wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
             
             self.after(0, lambda: self.escrever_log("⏳ Configuração enviada! Janela fechando em 10s..."))
-            time.sleep(10) 
+            time.sleep(14) 
             driver.quit()
 
             self.janela_de_cadastro(sn)
