@@ -38,9 +38,9 @@ IP_POS_CONFIG = "192.168.10.1"
 
 
 # BINS EMBUTIDOS NO EXECUTÁVEL
-ARQUIVO_BIN_3601S = resource_path("ZTE_H3601P Router Secundário.bin")
-ARQUIVO_BIN_3601 = resource_path("ZTE_H3601P Router Primario Agent.bin")
-ARQUIVO_BIN_6600 = resource_path("Versão 02.06.25.bin")
+ARQUIVO_BIN_3601S = PASTA_PROG / "ZTE_H3601P Router Secundário.bin"
+ARQUIVO_BIN_3601 = PASTA_PROG / "ZTE_H3601P Router Primario Agent.bin"
+ARQUIVO_BIN_6600 = PASTA_PROG / "Versão 02.06.25.bin"
 
 class PainelAutomacao(ctk.CTk):
     def __init__(self):
@@ -189,7 +189,7 @@ class PainelAutomacao(ctk.CTk):
             wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
             
             driver.execute_script("document.getElementById('defConfigUpload').style.display = 'block';")
-            driver.find_element(By.ID, "defConfigUpload").send_keys(ARQUIVO_BIN_3601)
+            driver.find_element(By.ID, "defConfigUpload").send_keys(str(ARQUIVO_BIN_3601))
             
             time.sleep(1)
             wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
@@ -304,7 +304,7 @@ class PainelAutomacao(ctk.CTk):
         # Tenta encontrar o elemento de upload com segurança
             upload_element = driver.find_element(By.ID, "DefCfgUpload")
             if upload_element:
-                upload_element.send_keys(ARQUIVO_BIN_6600)
+                upload_element.send_keys(str(ARQUIVO_BIN_6600))
                 wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
                 wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
             
@@ -359,7 +359,7 @@ class PainelAutomacao(ctk.CTk):
             wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
             
             driver.execute_script("document.getElementById('defConfigUpload').style.display = 'block';")
-            driver.find_element(By.ID, "defConfigUpload").send_keys(ARQUIVO_BIN_3601S)
+            driver.find_element(By.ID, "defConfigUpload").send_keys(str(ARQUIVO_BIN_3601S))
             
             time.sleep(1)
             wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
