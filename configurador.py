@@ -14,33 +14,27 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-import sys
-import os
-from pathlib import Path
-
-def resource_path(arquivo):
-    """Retorna o caminho correto tanto no .py quanto no .exe"""
-    if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, arquivo)
-    return os.path.join(os.path.abspath("."), arquivo)
-
-
+# ==========================================
+# CONFIGURAÇÕES DE CAMINHOS E IPS
+# ==========================================
 CHROME_PATH = ChromeDriverManager().install()
 DESKTOP_PATH = Path(os.environ["USERPROFILE"]) / "Desktop"
 PASTA_PROG = DESKTOP_PATH / "programa"
 ARQUIVO_CONTADOR = PASTA_PROG / "contador_prod.txt"
-ARQUIVO_LOGO = PASTA_PROG / "logo_engeplus.png"
+ARQUIVO_LOGO = PASTA_PROG / "logo_engeplus.png" # Caminho da logo
 
 PASTA_PROG.mkdir(parents=True, exist_ok=True)
 
 IP_ACESSO = "http://192.168.1.1"
-IP_POS_CONFIG = "192.168.10.1"
+IP_POS_CONFIG = "192.168.10.1" 
 
-
-# BINS EMBUTIDOS NO EXECUTÁVEL
-ARQUIVO_BIN_3601S = PASTA_PROG / "ZTE_H3601P Router Secundário.bin"
-ARQUIVO_BIN_3601 = PASTA_PROG / "ZTE_H3601P Router Primario Agent.bin"
-ARQUIVO_BIN_6600 = PASTA_PROG / "Versão 02.06.25.bin"
+# CAMINHOS DOS BINS
+BASE_PATH_3601S = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360\SECUNDARIO")
+ARQUIVO_BIN_3601S = str(BASE_PATH_3601S / "ZTE_H3601P Router Secundário.bin")
+BASE_PATH_3601 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360\PRIMARIO")
+ARQUIVO_BIN_3601 = str(BASE_PATH_3601 / "ZTE_H3601P Router Primario Agent.bin")
+BASE_PATH_6600 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\6600")
+ARQUIVO_BIN_6600 = str(BASE_PATH_6600 / "Versão 02.06.25.bin")
 
 class PainelAutomacao(ctk.CTk):
     def __init__(self):
@@ -111,7 +105,7 @@ class PainelAutomacao(ctk.CTk):
         self.val_contador = ctk.CTkLabel(self.frame_sidebar, text=str(self.total_finalizados), font=("Impact", 80), text_color="white")
         self.val_contador.pack(pady=10)
         
-        ctk.CTkButton(self.frame_sidebar, text="ZERAR CONTADOR", fg_color="#334455", command=self.resetar_contador).pack(side="bottom", pady=20)
+        ctk.CTkButton(self.frame_sidebar, text="ZERAR CONTADOR!", fg_color="#334455", command=self.resetar_contador).pack(side="bottom", pady=20)
 
         self.frame_main = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_main.grid(row=1, column=1, padx=20, pady=10, sticky="nsew")
@@ -189,7 +183,7 @@ class PainelAutomacao(ctk.CTk):
             wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
             
             driver.execute_script("document.getElementById('defConfigUpload').style.display = 'block';")
-            driver.find_element(By.ID, "defConfigUpload").send_keys(str(ARQUIVO_BIN_3601))
+            driver.find_element(By.ID, "defConfigUpload").send_keys(ARQUIVO_BIN_3601)
             
             time.sleep(1)
             wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
@@ -304,7 +298,7 @@ class PainelAutomacao(ctk.CTk):
         # Tenta encontrar o elemento de upload com segurança
             upload_element = driver.find_element(By.ID, "DefCfgUpload")
             if upload_element:
-                upload_element.send_keys(str(ARQUIVO_BIN_6600))
+                upload_element.send_keys(ARQUIVO_BIN_6600)
                 wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
                 wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
             
@@ -359,14 +353,14 @@ class PainelAutomacao(ctk.CTk):
             wait.until(EC.element_to_be_clickable((By.ID, "DefConfUploadBar"))).click()
             
             driver.execute_script("document.getElementById('defConfigUpload').style.display = 'block';")
-            driver.find_element(By.ID, "defConfigUpload").send_keys(str(ARQUIVO_BIN_3601S))
+            driver.find_element(By.ID, "defConfigUpload").send_keys(ARQUIVO_BIN_3601S)
             
             time.sleep(1)
             wait.until(EC.element_to_be_clickable((By.ID, "Btn_Upload"))).click()
             wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
             
             self.after(0, lambda: self.escrever_log("⏳ Configuração enviada! Janela fechando em 10s..."))
-            time.sleep(14) 
+            time.sleep(10) 
             driver.quit()
 
             self.janela_de_cadastro(sn)
