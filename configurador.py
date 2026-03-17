@@ -137,11 +137,11 @@ class PainelAutomacao(ctk.CTk):
                     if not self.esperando_troca_de_cabo:
                         if self.lock_execucao.acquire(blocking=False):
                             modelo = self.combo_modelo.get()
-                            if modelo == "ZTE H3601P":
+                            if modelo == "ROTEADOR SEM FIO / ZTE - H3601P":
                                 threading.Thread(target=self.fluxo_zte_3601, daemon=True).start()
-                            elif modelo == "ZTE H3601P SECUNDÁRIO":
+                            elif modelo == "SECUNDÁRIO - ROTEADOR SEM FIO / ZTE - H3601P ":
                                 threading.Thread(target=self.zte_3601_fluxo_secundario, daemon=True).start()
-                            elif modelo == "ZTE F6600P":
+                            elif modelo == "ROTEADOR - GPON / ONT ZTE F6600P":
                                 threading.Thread(target=self.fluxo_f6600p, daemon=True).start()
                                 
             except: pass
