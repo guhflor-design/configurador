@@ -94,7 +94,7 @@ class PainelAutomacao(ctk.CTk):
         
         self.combo_modelo = ctk.CTkComboBox(
             self.frame_sidebar, 
-            values=["ZTE F6600P", "ZTE H3601P","ZTE H3601P SECUNDÁRIO"], 
+            values=["ROTEADOR - GPON / ONT ZTE F6600P", "ROTEADOR SEM FIO / ZTE - H3601P","SECUNDÁRIO - ROTEADOR SEM FIO / ZTE - H3601P"], 
             width=250,
             state="readonly"
         )
@@ -139,7 +139,7 @@ class PainelAutomacao(ctk.CTk):
                             modelo = self.combo_modelo.get()
                             if modelo == "ROTEADOR SEM FIO / ZTE - H3601P":
                                 threading.Thread(target=self.fluxo_zte_3601, daemon=True).start()
-                            elif modelo == "SECUNDÁRIO - ROTEADOR SEM FIO / ZTE - H3601P ":
+                            elif modelo == "SECUNDÁRIO - ROTEADOR SEM FIO / ZTE - H3601P":
                                 threading.Thread(target=self.zte_3601_fluxo_secundario, daemon=True).start()
                             elif modelo == "ROTEADOR - GPON / ONT ZTE F6600P":
                                 threading.Thread(target=self.fluxo_f6600p, daemon=True).start()
@@ -253,6 +253,8 @@ class PainelAutomacao(ctk.CTk):
             driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
             driver.find_element(By.ID, "LoginId").click()
 
+            time.sleep(2)
+            pyautogui.click(668, 378) 
             time.sleep(2)
             pyautogui.click(668, 378) 
             time.sleep(2)
