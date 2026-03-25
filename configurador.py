@@ -305,7 +305,7 @@ class PainelAutomacao(ctk.CTk):
                 wait.until(EC.element_to_be_clickable((By.ID, "confirmOK"))).click()
             
                 self.after(0, lambda: self.escrever_log("⏳ Configuração enviada! Janela fechando em 10s..."))
-                time.sleep(10)
+                time.sleep(20)
                 driver.quit()
                 self.janela_de_cadastro(sn)
                 self.aguardar_ping_reboot()
