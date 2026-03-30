@@ -98,7 +98,7 @@ class PainelAutomacao(ctk.CTk):
             width=250,
             state="readonly"
         )
-        self.combo_modelo.set("ZTE H3601P")
+        self.combo_modelo.set("--- SELECIONE O MODELO ---")
         self.combo_modelo.pack(pady=10)
 
         ctk.CTkLabel(self.frame_sidebar, text="PRODUÇÃO TOTAL", font=("Segoe UI", 16, "bold"), text_color="#00b4d8").pack(pady=(30, 0))
