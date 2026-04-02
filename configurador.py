@@ -177,7 +177,7 @@ class PainelAutomacao(ctk.CTk):
             threading.Thread(target=self.loop_ping_led, args=(ip_din, self.card_right), daemon=True).start()
         else:
             self.testando_pings = False
-            self.btn_test_ping.configure(text="LIGAR TESTES", fg_color="#1f538d")
+            self.btn_test_ping.configure(text="LIGAR TESTES", fg_color="#23cf40")
 
     def loop_ping_led(self, ip, widgets):
         falhas_consecutivas = 0
