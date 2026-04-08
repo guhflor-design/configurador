@@ -1,11 +1,12 @@
-import subprocess
 import os
 import time
 import requests
 import threading
+import subprocess
+import pyautogui
 import customtkinter as ctk
 from pathlib import Path
-from PIL import Image # Necessário para processar a logo
+from PIL import Image
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -21,21 +22,19 @@ CHROME_PATH = ChromeDriverManager().install()
 DESKTOP_PATH = Path(os.environ["USERPROFILE"]) / "Desktop"
 PASTA_PROG = DESKTOP_PATH / "programa"
 ARQUIVO_CONTADOR = PASTA_PROG / "contador_prod.txt"
-ARQUIVO_LOGO = PASTA_PROG / "logo_engeplus.png" 
-ARQUIVO_LOGO_LED = PASTA_PROG / "logo_led.png" 
+ARQUIVO_LOGO = PASTA_PROG / "logo_engeplus.png"
+ARQUIVO_LOGO_LED = PASTA_PROG / "logo_led.png"
+
+
 PASTA_PROG.mkdir(parents=True, exist_ok=True)
 
 IP_ACESSO = "http://192.168.1.1"
 IP_POS_CONFIG = "192.168.10.1" 
 
-# CAMINHOS DOS BINS
-BASE_PATH_3601S = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360\SECUNDARIO")
-ARQUIVO_BIN_3601S = str(BASE_PATH_3601S / "ZTE_H3601P Router Secundário.bin")
-BASE_PATH_3601 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360\PRIMARIO")
-ARQUIVO_BIN_3601 = str(BASE_PATH_3601 / "ZTE_H3601P Router Primario Agent.bin")
-BASE_PATH_6600 = Path(r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\6600")
-ARQUIVO_BIN_6600 = str(BASE_PATH_6600 / "Versão 02.06.25.bin")
-
+# Caminhos dos BINS (Mantenha seus caminhos originais)
+ARQUIVO_BIN_3601S = r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360\SECUNDARIO\ZTE_H3601P Router Secundário.bin"
+ARQUIVO_BIN_3601 = r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\360\PRIMARIO\ZTE_H3601P Router Primario Agent.bin"
+ARQUIVO_BIN_6600 = r"C:\Users\gustavo.fernandes\OneDrive - SATC - Associação Beneficente da Indústria Carbonífera de Santa Catarina\fase 1\Área de Trabalho\routers\6600\Versão 02.06.25.bin"
 
 class PainelAutomacao(ctk.CTk):
     def __init__(self):
@@ -176,7 +175,7 @@ class PainelAutomacao(ctk.CTk):
             threading.Thread(target=self.loop_ping_led, args=(ip_din, self.card_right), daemon=True).start()
         else:
             self.testando_pings = False
-            self.btn_test_ping.configure(text="LIGAR TESTES", fg_color="#23cf40")
+            self.btn_test_ping.configure(text="LIGAR TESTES", fg_color="#1f538d")
 
     def loop_ping_led(self, ip, widgets):
         falhas_consecutivas = 0
@@ -304,21 +303,17 @@ class PainelAutomacao(ctk.CTk):
         try:
             self.after(0, lambda: self.escrever_log("🔓 Acessando H3601P..."))
             opts = Options()
-            opts.add_argument("--window-size=1024,768")
-            opts.add_experimental_option("prefs", {
-                "credentials_enable_service": False,
-                "profile.password_manager_enabled": False,
-                "profile.default_content_setting_values.notifications": 2,
-            })
-            opts.add_argument("--disable-notifications")
+            opts.add_argument("--window-size=1024,768") 
             driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
             wait = WebDriverWait(driver, 20)
             driver.get(IP_ACESSO)
             wait.until(EC.presence_of_element_located((By.ID, "Frm_Username"))).send_keys("multipro")
             driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
             driver.find_element(By.ID, "LoginId").click()
-
+            
             time.sleep(2)
+            pyautogui.click(668, 378) 
+            time.sleep(1.5)
             wait.until(EC.element_to_be_clickable((By.ID, "Btn_Close"))).click()
 
             driver.switch_to.default_content()
@@ -347,6 +342,9 @@ class PainelAutomacao(ctk.CTk):
             time.sleep(10) 
             driver.quit()
 
+            self.janela_de_cadastro(sn)
+            self.aguardar_ping_reboot()
+            # ... (Resto do código de confirmação e reboot) ...
 
         except Exception as e:
             self.after(0, lambda: self.escrever_log(f"❌ Erro: {str(e).splitlines()[0]}"))
@@ -361,12 +359,6 @@ class PainelAutomacao(ctk.CTk):
             self.after(0, lambda: self.escrever_log("🔧 Iniciando fluxo F6600P..."))
             opts = Options()
             opts.add_argument("--window-size=1024,768")
-            opts.add_experimental_option("prefs", {
-                "credentials_enable_service": False,
-                "profile.password_manager_enabled": False,
-                "profile.default_content_setting_values.notifications": 2,
-            })
-            opts.add_argument("--disable-notifications")
             driver = webdriver.Chrome(service=Service(CHROME_PATH), options=opts)
             wait = WebDriverWait(driver, 20)
 
@@ -375,6 +367,10 @@ class PainelAutomacao(ctk.CTk):
             driver.find_element(By.ID, "Frm_Password").send_keys("multipro")
             driver.find_element(By.ID, "LoginId").click()
 
+            time.sleep(2)
+            pyautogui.click(668, 378) 
+            time.sleep(2)
+            pyautogui.click(668, 378) 
             time.sleep(2)
 
         # Tenta sair da configuração rápida, mas continua se o botão não estiver lá
@@ -425,6 +421,8 @@ class PainelAutomacao(ctk.CTk):
                 self.after(0, lambda: self.escrever_log("⏳ Configuração enviada! Janela fechando em 10s..."))
                 time.sleep(20)
                 driver.quit()
+                self.janela_de_cadastro(sn)
+                self.aguardar_ping_reboot()
             else:
                 raise Exception("Campo de upload não encontrado (ID incorreto)")
 
