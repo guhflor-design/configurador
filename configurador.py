@@ -302,12 +302,12 @@ class PainelAutomacao(ctk.CTk):
     def fluxo_zte_3601_universal(self, caminho_bin):
         driver = None
         try:
-            self.after(0, lambda: self.escrever_log("🔓 Acessando H3601P..."))
             opts = Options()
             opts.add_argument("--window-size=1024,768")
             opts.add_experimental_option("prefs", {
                 "credentials_enable_service": False,
                 "profile.password_manager_enabled": False,
+                "profile.password_manager_leak_detection": False,
                 "profile.default_content_setting_values.notifications": 2,
             })
             opts.add_argument("--disable-notifications")
@@ -358,12 +358,12 @@ class PainelAutomacao(ctk.CTk):
         # ... Insira aqui o conteúdo do seu fluxo_f6600p original ...
         driver = None
         try:
-            self.after(0, lambda: self.escrever_log("🔧 Iniciando fluxo F6600P..."))
             opts = Options()
             opts.add_argument("--window-size=1024,768")
             opts.add_experimental_option("prefs", {
                 "credentials_enable_service": False,
                 "profile.password_manager_enabled": False,
+                "profile.password_manager_leak_detection": False,
                 "profile.default_content_setting_values.notifications": 2,
             })
             opts.add_argument("--disable-notifications")
